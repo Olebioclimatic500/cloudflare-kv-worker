@@ -209,6 +209,41 @@ app.get('/', (c) => {
   return c.json({ message: 'Cloudflare KV Worker API', version: '1.0.0', docs: '/api/v1/docs' });
 });
 
+// Health check endpoint
+app.get(
+  '/health',
+  describeRoute({
+    tags: ['Health'],
+    summary: 'Health check',
+    description: 'Simple health check endpoint that returns OK',
+    responses: {
+      200: {
+        description: 'Service is healthy',
+        content: {
+          'application/json': {
+            schema: resolver(
+              v.object({
+                status: v.string(),
+              })
+            ),
+            examples: {
+              healthy: {
+                summary: 'Healthy response',
+                value: {
+                  status: 'OK',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  }),
+  (c) => {
+    return c.json({ status: 'OK' });
+  }
+);
+
 // Get a single KV value
 app.get(
   '/kv/:key',
