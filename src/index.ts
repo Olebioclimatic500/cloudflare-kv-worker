@@ -8,7 +8,7 @@ import type { Context, Next } from 'hono';
 // HMAC Authentication Middleware
 async function hmacAuth(c: Context<{ Bindings: CloudflareBindings }>, next: Next) {
   // Skip auth for OpenAPI and docs endpoints
-  if (c.req.path === '/api/v1/openapi' || c.req.path === '/api/v1/docs' || c.req.path === '/api/v1/') {
+  if (c.req.path === '/' || c.req.path === '/api/v1/openapi' || c.req.path === '/api/v1/docs' || c.req.path === '/api/v1/') {
     return next();
   }
 
@@ -1418,7 +1418,8 @@ Created by [kulterryan](https://github.com/kulterryan) | Follow on [X/Twitter](h
           BearerAuth: {
             type: 'http',
             scheme: 'bearer',
-            description: 'Simple API key authentication. Use your AUTH_SECRET_KEY as the bearer token.',
+            bearerFormat: 'token',
+            description: 'Simple API key authentication. Enter your AUTH_SECRET_KEY directly (without "Bearer" prefix).',
           },
           HMACAuth: {
             type: 'apiKey',
