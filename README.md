@@ -1,8 +1,18 @@
-# Cloudflare KV Worker API
+# Cloudflare KV Monorepo
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://dub.sh/L1aS7JO)
 
-A high-performance REST API for managing Cloudflare KV (Key-Value) storage at the edge, built with Hono and TypeScript.
+A monorepo containing a high-performance REST API for Cloudflare KV storage and client SDKs. Built with Turborepo, Hono, and TypeScript.
+
+## Project Structure
+
+```
+├── apps/
+│   └── api/          # Cloudflare KV Worker API
+├── packages/
+│   └── typescript-sdk/  # TypeScript/JavaScript SDK (coming soon)
+└── turbo.json        # Turborepo configuration
+```
 
 ## Features
 
@@ -173,6 +183,44 @@ Common HTTP status codes:
 ## License
 
 MIT
+
+## Development
+
+This project uses [Turborepo](https://turbo.build) for managing the monorepo.
+
+### Quick Start
+
+```bash
+# Install dependencies
+bun install
+
+# Development (all packages)
+bun run dev
+
+# Development (specific app)
+cd apps/api && bun run dev
+
+# Build all packages
+bun run build
+
+# Deploy API
+bun run deploy
+```
+
+### Working with the API
+
+```bash
+cd apps/api
+
+# Start development server
+bun run dev
+
+# Deploy to Cloudflare Workers
+bun run deploy
+
+# Generate TypeScript types
+bun run cf-typegen
+```
 
 ## Contributing
 

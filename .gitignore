@@ -1,5 +1,10 @@
 # prod
 dist/
+**/dist/
+build/
+**/build/
+out/
+**/out/
 
 # dev
 .yarn/
@@ -13,12 +18,15 @@ dist/
 
 # deps
 node_modules/
+**/node_modules/
 .wrangler
+**/.wrangler/
 
 # env
 .env
 .env.production
 .dev.vars
+**/.dev.vars
 
 # logs
 logs/
@@ -29,5 +37,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# turborepo
+.turbo/
+
 # misc
 .DS_Store
+*.tsbuildinfo
+**/*.tsbuildinfo
