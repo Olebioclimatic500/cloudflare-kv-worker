@@ -111,17 +111,63 @@ app.get('/', (c) => {
 app.get('/kv/:key',
   describeRoute({
     description: 'Get a single KV value by key',
+    parameters: [
+      {
+        name: 'key',
+        in: 'path',
+        required: true,
+        description: 'The key to retrieve (1-512 characters)',
+        schema: { type: 'string' },
+        example: 'user:123'
+      },
+      {
+        name: 'type',
+        in: 'query',
+        required: false,
+        description: 'Response format: "text" or "json"',
+        schema: { type: 'string', enum: ['text', 'json'] },
+        example: 'json'
+      },
+      {
+        name: 'cacheTtl',
+        in: 'query',
+        required: false,
+        description: 'Cache TTL in seconds',
+        schema: { type: 'number' },
+        example: 3600
+      }
+    ],
     responses: {
       200: {
         description: 'Successful response',
         content: {
-          'application/json': { schema: resolver(kvValueResponseSchema) }
+          'application/json': {
+            schema: resolver(kvValueResponseSchema),
+            examples: {
+              textValue: {
+                summary: 'Text value',
+                value: { key: 'user:123', value: 'John Doe' }
+              },
+              jsonValue: {
+                summary: 'JSON value',
+                value: { key: 'user:123', value: { name: 'John Doe', email: 'john@example.com' } }
+              }
+            }
+          }
         }
       },
       404: {
         description: 'Key not found',
         content: {
-          'application/json': { schema: resolver(errorResponseSchema) }
+          'application/json': {
+            schema: resolver(errorResponseSchema),
+            examples: {
+              notFound: {
+                summary: 'Key does not exist',
+                value: { error: 'Key not found' }
+              }
+            }
+          }
         }
       },
       500: {
@@ -162,7 +208,32 @@ app.get('/kv/:key',
 // Get multiple KV values
 app.post('/kv/batch',
   describeRoute({
-    description: 'Get multiple KV values by keys',
+    description: 'Get multiple KV values by keys (max 100 keys)',
+    requestBody: {
+      description: 'Batch request body',
+      required: true,
+      content: {
+        'application/json': {
+          examples: {
+            textBatch: {
+              summary: 'Get text values',
+              value: {
+                keys: ['user:123', 'user:456', 'user:789'],
+                type: 'text'
+              }
+            },
+            jsonBatch: {
+              summary: 'Get JSON values with cache',
+              value: {
+                keys: ['config:app', 'config:db'],
+                type: 'json',
+                cacheTtl: 3600
+              }
+            }
+          }
+        }
+      }
+    },
     responses: {
       200: {
         description: 'Successful response',
@@ -170,7 +241,19 @@ app.post('/kv/batch',
           'application/json': {
             schema: resolver(v.object({
               values: v.record(v.string(), v.any())
-            }))
+            })),
+            examples: {
+              batchResult: {
+                summary: 'Batch get result',
+                value: {
+                  values: {
+                    'user:123': { name: 'John Doe', email: 'john@example.com' },
+                    'user:456': { name: 'Jane Smith', email: 'jane@example.com' },
+                    'user:789': null
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -216,18 +299,72 @@ app.post('/kv/batch',
 // Get a single KV value with metadata
 app.get('/kv/:key/metadata',
   describeRoute({
-    description: 'Get a single KV value with metadata by key',
+    description: 'Get a single KV value with its metadata by key',
+    parameters: [
+      {
+        name: 'key',
+        in: 'path',
+        required: true,
+        description: 'The key to retrieve (1-512 characters)',
+        schema: { type: 'string' },
+        example: 'user:123'
+      },
+      {
+        name: 'type',
+        in: 'query',
+        required: false,
+        description: 'Response format: "text" or "json"',
+        schema: { type: 'string', enum: ['text', 'json'] },
+        example: 'json'
+      },
+      {
+        name: 'cacheTtl',
+        in: 'query',
+        required: false,
+        description: 'Cache TTL in seconds',
+        schema: { type: 'number' },
+        example: 3600
+      }
+    ],
     responses: {
       200: {
         description: 'Successful response',
         content: {
-          'application/json': { schema: resolver(kvMetadataResponseSchema) }
+          'application/json': {
+            schema: resolver(kvMetadataResponseSchema),
+            examples: {
+              withMetadata: {
+                summary: 'Value with metadata',
+                value: {
+                  key: 'user:123',
+                  value: { name: 'John Doe', email: 'john@example.com' },
+                  metadata: { version: 2, createdBy: 'admin', lastModified: '2025-01-15' }
+                }
+              },
+              withoutMetadata: {
+                summary: 'Value without metadata',
+                value: {
+                  key: 'simple:key',
+                  value: 'Simple text value',
+                  metadata: null
+                }
+              }
+            }
+          }
         }
       },
       404: {
         description: 'Key not found',
         content: {
-          'application/json': { schema: resolver(errorResponseSchema) }
+          'application/json': {
+            schema: resolver(errorResponseSchema),
+            examples: {
+              notFound: {
+                summary: 'Key does not exist',
+                value: { error: 'Key not found' }
+              }
+            }
+          }
         }
       },
       500: {
@@ -270,7 +407,24 @@ app.get('/kv/:key/metadata',
 // Get multiple KV values with metadata
 app.post('/kv/batch/metadata',
   describeRoute({
-    description: 'Get multiple KV values with metadata by keys',
+    description: 'Get multiple KV values with metadata by keys (max 100 keys)',
+    requestBody: {
+      description: 'Batch request with metadata',
+      required: true,
+      content: {
+        'application/json': {
+          examples: {
+            batchMetadata: {
+              summary: 'Get multiple values with metadata',
+              value: {
+                keys: ['user:123', 'user:456', 'config:app'],
+                type: 'json'
+              }
+            }
+          }
+        }
+      }
+    },
     responses: {
       200: {
         description: 'Successful response',
@@ -281,7 +435,28 @@ app.post('/kv/batch/metadata',
                 value: v.any(),
                 metadata: v.any()
               }))
-            }))
+            })),
+            examples: {
+              metadataResult: {
+                summary: 'Batch with metadata result',
+                value: {
+                  values: {
+                    'user:123': {
+                      value: { name: 'John Doe', email: 'john@example.com' },
+                      metadata: { version: 1, createdBy: 'system' }
+                    },
+                    'user:456': {
+                      value: { name: 'Jane Smith', email: 'jane@example.com' },
+                      metadata: { version: 2, createdBy: 'admin' }
+                    },
+                    'config:app': {
+                      value: { theme: 'dark' },
+                      metadata: null
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -326,12 +501,65 @@ app.post('/kv/batch/metadata',
 // List KV keys with pagination
 app.get('/kv',
   describeRoute({
-    description: 'List KV keys with pagination',
+    description: 'List KV keys with optional prefix filtering and pagination support',
+    parameters: [
+      {
+        name: 'prefix',
+        in: 'query',
+        required: false,
+        description: 'Filter keys by prefix (e.g., "user:" to list all user keys)',
+        schema: { type: 'string' },
+        example: 'user:'
+      },
+      {
+        name: 'limit',
+        in: 'query',
+        required: false,
+        description: 'Maximum number of keys to return (default: 1000)',
+        schema: { type: 'number' },
+        example: 100
+      },
+      {
+        name: 'cursor',
+        in: 'query',
+        required: false,
+        description: 'Pagination cursor from previous response',
+        schema: { type: 'string' },
+        example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+      }
+    ],
     responses: {
       200: {
         description: 'Successful response',
         content: {
-          'application/json': { schema: resolver(listResponseSchema) }
+          'application/json': {
+            schema: resolver(listResponseSchema),
+            examples: {
+              listComplete: {
+                summary: 'List complete (no more pages)',
+                value: {
+                  keys: [
+                    { name: 'user:123', expiration: 1735689600, metadata: { version: 1 } },
+                    { name: 'user:456', metadata: { version: 2 } },
+                    { name: 'user:789' }
+                  ],
+                  list_complete: true
+                }
+              },
+              listWithCursor: {
+                summary: 'List incomplete (more pages available)',
+                value: {
+                  keys: [
+                    { name: 'session:abc' },
+                    { name: 'session:def' },
+                    { name: 'session:ghi' }
+                  ],
+                  list_complete: false,
+                  cursor: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+                }
+              }
+            }
+          }
         }
       },
       500: {
@@ -369,24 +597,86 @@ app.get('/kv',
 // Write a single KV pair (POST)
 app.post('/kv',
   describeRoute({
-    description: 'Write a single KV pair using POST',
+    description: 'Write a single KV pair using POST with key in request body',
+    requestBody: {
+      description: 'Key-value pair data',
+      required: true,
+      content: {
+        'application/json': {
+          examples: {
+            simpleText: {
+              summary: 'Store text value',
+              value: {
+                key: 'user:123',
+                value: 'John Doe'
+              }
+            },
+            jsonWithMetadata: {
+              summary: 'Store JSON with metadata and TTL',
+              value: {
+                key: 'config:app',
+                value: { theme: 'dark', language: 'en' },
+                expirationTtl: 86400,
+                metadata: { version: '1.0', author: 'admin' }
+              }
+            },
+            withExpiration: {
+              summary: 'Store with Unix timestamp expiration',
+              value: {
+                key: 'session:abc123',
+                value: 'session-data-here',
+                expiration: 1735689600
+              }
+            }
+          }
+        }
+      }
+    },
     responses: {
       201: {
         description: 'Successfully created',
         content: {
-          'application/json': { schema: resolver(successResponseSchema) }
+          'application/json': {
+            schema: resolver(successResponseSchema),
+            examples: {
+              success: {
+                summary: 'Successful write',
+                value: {
+                  success: true,
+                  key: 'user:123',
+                  message: 'Key-value pair written successfully'
+                }
+              }
+            }
+          }
         }
       },
       400: {
-        description: 'Bad request',
+        description: 'Bad request (invalid key or validation error)',
         content: {
-          'application/json': { schema: resolver(errorResponseSchema) }
+          'application/json': {
+            schema: resolver(errorResponseSchema),
+            examples: {
+              invalidKey: {
+                summary: 'Invalid key',
+                value: { error: 'Invalid key. Key cannot be "." or ".."' }
+              }
+            }
+          }
         }
       },
       429: {
         description: 'Rate limit exceeded',
         content: {
-          'application/json': { schema: resolver(errorResponseSchema) }
+          'application/json': {
+            schema: resolver(errorResponseSchema),
+            examples: {
+              rateLimit: {
+                summary: 'Too many writes to same key',
+                value: { error: 'Rate limit exceeded. Maximum 1 write per second to the same key.' }
+              }
+            }
+          }
         }
       },
       500: {
@@ -441,24 +731,98 @@ app.post('/kv',
 // Write a single KV pair (PUT)
 app.put('/kv/:key',
   describeRoute({
-    description: 'Write a single KV pair using PUT with key in URL',
+    description: 'Write a single KV pair using PUT with key in URL path',
+    parameters: [
+      {
+        name: 'key',
+        in: 'path',
+        required: true,
+        description: 'The key to write (1-512 characters, cannot be "." or "..")',
+        schema: { type: 'string' },
+        example: 'user:123'
+      }
+    ],
+    requestBody: {
+      description: 'Value and optional metadata',
+      required: true,
+      content: {
+        'application/json': {
+          examples: {
+            simpleValue: {
+              summary: 'Store simple value',
+              value: {
+                value: 'John Doe'
+              }
+            },
+            jsonValue: {
+              summary: 'Store JSON object',
+              value: {
+                value: { name: 'John Doe', email: 'john@example.com', age: 30 }
+              }
+            },
+            withTTL: {
+              summary: 'Store with TTL (24 hours)',
+              value: {
+                value: 'temporary data',
+                expirationTtl: 86400
+              }
+            },
+            withMetadata: {
+              summary: 'Store with metadata',
+              value: {
+                value: { status: 'active' },
+                metadata: { createdBy: 'admin', version: 2 }
+              }
+            }
+          }
+        }
+      }
+    },
     responses: {
       201: {
         description: 'Successfully created',
         content: {
-          'application/json': { schema: resolver(successResponseSchema) }
+          'application/json': {
+            schema: resolver(successResponseSchema),
+            examples: {
+              success: {
+                summary: 'Write successful',
+                value: {
+                  success: true,
+                  key: 'user:123',
+                  message: 'Key-value pair written successfully'
+                }
+              }
+            }
+          }
         }
       },
       400: {
         description: 'Bad request',
         content: {
-          'application/json': { schema: resolver(errorResponseSchema) }
+          'application/json': {
+            schema: resolver(errorResponseSchema),
+            examples: {
+              invalidKey: {
+                summary: 'Invalid key',
+                value: { error: 'Invalid key. Key cannot be "." or ".."' }
+              }
+            }
+          }
         }
       },
       429: {
         description: 'Rate limit exceeded',
         content: {
-          'application/json': { schema: resolver(errorResponseSchema) }
+          'application/json': {
+            schema: resolver(errorResponseSchema),
+            examples: {
+              rateLimit: {
+                summary: 'Rate limit error',
+                value: { error: 'Rate limit exceeded. Maximum 1 write per second to the same key.' }
+              }
+            }
+          }
         }
       },
       500: {
@@ -515,18 +879,93 @@ app.put('/kv/:key',
 // Bulk write KV pairs
 app.post('/kv/bulk',
   describeRoute({
-    description: 'Bulk write KV pairs',
+    description: 'Bulk write multiple KV pairs (max 10,000 pairs) with automatic retry on rate limits',
+    requestBody: {
+      description: 'Array of key-value pairs to write',
+      required: true,
+      content: {
+        'application/json': {
+          examples: {
+            simpleBulk: {
+              summary: 'Bulk write simple values',
+              value: {
+                pairs: [
+                  { key: 'user:1', value: 'Alice' },
+                  { key: 'user:2', value: 'Bob' },
+                  { key: 'user:3', value: 'Charlie' }
+                ]
+              }
+            },
+            bulkWithOptions: {
+              summary: 'Bulk write with TTL and metadata',
+              value: {
+                pairs: [
+                  {
+                    key: 'session:abc',
+                    value: { userId: 123, token: 'xyz' },
+                    expirationTtl: 3600,
+                    metadata: { type: 'user-session' }
+                  },
+                  {
+                    key: 'session:def',
+                    value: { userId: 456, token: 'uvw' },
+                    expirationTtl: 3600,
+                    metadata: { type: 'user-session' }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
     responses: {
       201: {
         description: 'All pairs successfully written',
         content: {
-          'application/json': { schema: resolver(bulkResponseSchema) }
+          'application/json': {
+            schema: resolver(bulkResponseSchema),
+            examples: {
+              allSuccess: {
+                summary: 'All writes successful',
+                value: {
+                  success: true,
+                  total: 3,
+                  successful: 3,
+                  failed: 0,
+                  results: [
+                    { key: 'user:1', success: true },
+                    { key: 'user:2', success: true },
+                    { key: 'user:3', success: true }
+                  ]
+                }
+              }
+            }
+          }
         }
       },
       207: {
         description: 'Multi-status (partial success)',
         content: {
-          'application/json': { schema: resolver(bulkResponseSchema) }
+          'application/json': {
+            schema: resolver(bulkResponseSchema),
+            examples: {
+              partialSuccess: {
+                summary: 'Some writes failed',
+                value: {
+                  success: false,
+                  total: 3,
+                  successful: 2,
+                  failed: 1,
+                  results: [
+                    { key: 'user:1', success: true },
+                    { key: 'user:2', success: true },
+                    { key: 'invalid', success: false, error: 'Invalid key' }
+                  ]
+                }
+              }
+            }
+          }
         }
       },
       400: {
@@ -614,12 +1053,34 @@ app.post('/kv/bulk',
 // Delete a single KV pair
 app.delete('/kv/:key',
   describeRoute({
-    description: 'Delete a single KV pair by key',
+    description: 'Delete a single KV pair by key (succeeds even if key does not exist)',
+    parameters: [
+      {
+        name: 'key',
+        in: 'path',
+        required: true,
+        description: 'The key to delete (1-512 characters)',
+        schema: { type: 'string' },
+        example: 'user:123'
+      }
+    ],
     responses: {
       200: {
         description: 'Successfully deleted',
         content: {
-          'application/json': { schema: resolver(successResponseSchema) }
+          'application/json': {
+            schema: resolver(successResponseSchema),
+            examples: {
+              deleted: {
+                summary: 'Delete successful',
+                value: {
+                  success: true,
+                  key: 'user:123',
+                  message: 'Key deleted successfully'
+                }
+              }
+            }
+          }
         }
       },
       500: {
@@ -652,12 +1113,53 @@ app.delete('/kv/:key',
 // Bulk delete KV pairs
 app.post('/kv/bulk/delete',
   describeRoute({
-    description: 'Bulk delete KV pairs by keys',
+    description: 'Bulk delete multiple KV pairs by keys (no maximum limit)',
+    requestBody: {
+      description: 'Array of keys to delete',
+      required: true,
+      content: {
+        'application/json': {
+          examples: {
+            deleteMultiple: {
+              summary: 'Delete multiple keys',
+              value: {
+                keys: ['user:123', 'user:456', 'session:abc', 'cache:old-data']
+              }
+            },
+            deleteByPrefix: {
+              summary: 'Delete session keys',
+              value: {
+                keys: ['session:abc', 'session:def', 'session:ghi']
+              }
+            }
+          }
+        }
+      }
+    },
     responses: {
       200: {
         description: 'Bulk delete completed',
         content: {
-          'application/json': { schema: resolver(bulkResponseSchema) }
+          'application/json': {
+            schema: resolver(bulkResponseSchema),
+            examples: {
+              allDeleted: {
+                summary: 'All deletions successful',
+                value: {
+                  success: true,
+                  total: 4,
+                  successful: 4,
+                  failed: 0,
+                  results: [
+                    { key: 'user:123', success: true },
+                    { key: 'user:456', success: true },
+                    { key: 'session:abc', success: true },
+                    { key: 'cache:old-data', success: true }
+                  ]
+                }
+              }
+            }
+          }
         }
       },
       400: {
