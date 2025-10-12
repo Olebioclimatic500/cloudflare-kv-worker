@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import * as v from 'valibot'
 import { describeRoute, openAPIRouteHandler, resolver } from 'hono-openapi'
 import { vValidator } from '@hono/valibot-validator'
-import { apiReference } from '@scalar/hono-api-reference'
+import { apiReference, Scalar } from '@scalar/hono-api-reference'
 
 // Valibot Schemas
 const keyParamSchema = v.object({
@@ -641,10 +641,19 @@ app.get('/openapi',
         description: 'A REST API for managing Cloudflare KV storage with support for reading, writing, and deleting key-value pairs, including batch operations and metadata management.',
       },
       servers: [
-        { url: 'http://localhost:8787/api/v1', description: 'Local Development Server' },
-        { url: 'https://your-worker.your-subdomain.workers.dev/api/v1', description: 'Production Server' },
+        { url: 'http://localhost:8787', description: 'Local Development Server' },
+        { url: 'https://your-worker.your-subdomain.workers.dev', description: 'Production Server' },
       ],
     },
+  })
+)
+
+// Scalar API Reference UI
+app.get('/docs',
+  Scalar({
+    url: '/api/v1/openapi',
+    theme: 'default',
+    layout: 'modern',
   })
 )
 
