@@ -420,6 +420,8 @@ const app = new Hono<{ Bindings: CloudflareBindings }>();
 
 ## 🚢 Deployment
 
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/kulterryan/cloudflare-kv-worker)
+
 ### 1. Set Secrets
 
 ```bash
