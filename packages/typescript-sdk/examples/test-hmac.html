@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KV Client HMAC Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .request {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .timestamp { color: #0066cc; }
+        .signature { color: #cc6600; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Cloudflare KV Client - HMAC Authentication Demo</h1>
+
+    <div>
+        <h2>Configuration</h2>
+        <input type="text" id="baseUrl" placeholder="API URL" value="http://localhost:8787" style="width: 300px;">
+        <input type="password" id="secretKey" placeholder="Secret Key" value="dabcca8727e862f48c452a9215a5978d" style="width: 300px;">
+    </div>
+
+    <div>
+        <h2>Test HMAC Generation</h2>
+        <button onclick="testSingleRequest()">Test Single Request</button>
+        <button onclick="testMultipleRequests()">Test Multiple Requests (Different Signatures)</button>
+        <button onclick="testBulkOperation()">Test Bulk Operation</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+
+    <div id="output"></div>
+
+    <script type="module">
+        // Simple KV Client implementation for testing
+        class KVClient {
+            constructor(baseUrl, secretKey) {
+                this.baseUrl = baseUrl.replace(/\/$/, '');
+                this.secretKey = secretKey;
+            }
+
+            async generateHMACSignature(method, path, body = '') {
+                const timestamp = Date.now().toString();
+                const message = `${method}${path}${timestamp}${body}`;
+
+                const encoder = new TextEncoder();
+                const keyData = encoder.encode(this.secretKey);
+                const messageData = encoder.encode(message);
+
+                const cryptoKey = await crypto.subtle.importKey(
+                    'raw',
+                    keyData,
+                    { name: 'HMAC', hash: 'SHA-256' },
+                    false,
+                    ['sign']
+                );
+
+                const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+                const signature = Array.from(new Uint8Array(signatureBuffer))
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('');
+
+                return { signature, timestamp, message };
+            }
+
+            async request(method, endpoint, body = null) {
+                const url = `${this.baseUrl}${endpoint}`;
+                const urlPath = new URL(url).pathname;
+                const bodyStr = body ? JSON.stringify(body) : '';
+
+                const { signature, timestamp, message } = await this.generateHMACSignature(
+                    method,
+                    urlPath,
+                    bodyStr
+                );
+
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'X-Signature': signature,
+                    'X-Timestamp': timestamp,
+                };
+
+                const options = {
+                    method,
+                    headers,
+                };
+
+                if (body) {
+                    options.body = bodyStr;
+                }
+
+                const response = await fetch(url, options);
+                const data = await response.json();
+
+                return {
+                    success: response.ok,
+                    status: response.status,
+                    data,
+                    debug: {
+                        timestamp,
+                        signature: signature.substring(0, 20) + '...',
+                        fullSignature: signature,
+                        message,
+                        path: urlPath,
+                        method
+                    }
+                };
+            }
+        }
+
+        window.testSingleRequest = async function() {
+            const baseUrl = document.getElementById('baseUrl').value;
+            const secretKey = document.getElementById('secretKey').value;
+            const client = new KVClient(baseUrl, secretKey);
+
+            try {
+                log('Making single request...');
+                const result = await client.request('PUT', '/api/v1/kv/test:hmac', {
+                    value: 'Testing HMAC authentication',
+                    timestamp: new Date().toISOString()
+                });
+
+                logRequest(result);
+            } catch (error) {
+                logError(error);
+            }
+        };
+
+        window.testMultipleRequests = async function() {
+            const baseUrl = document.getElementById('baseUrl').value;
+            const secretKey = document.getElementById('secretKey').value;
+            const client = new KVClient(baseUrl, secretKey);
+
+            try {
+                log('Making multiple requests to show different signatures...');
+
+                for (let i = 1; i <= 3; i++) {
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Small delay
+
+                    const result = await client.request('PUT', `/api/v1/kv/test:${i}`, {
+                        value: `Request #${i}`,
+                        requestTime: new Date().toISOString()
+                    });
+
+                    log(`Request #${i}:`);
+                    logRequest(result);
+                }
+            } catch (error) {
+                logError(error);
+            }
+        };
+
+        window.testBulkOperation = async function() {
+            const baseUrl = document.getElementById('baseUrl').value;
+            const secretKey = document.getElementById('secretKey').value;
+            const client = new KVClient(baseUrl, secretKey);
+
+            try {
+                log('Making bulk write request...');
+                const result = await client.request('POST', '/api/v1/kv/bulk', {
+                    pairs: [
+                        { key: 'bulk:1', value: 'First bulk item' },
+                        { key: 'bulk:2', value: 'Second bulk item' },
+                        { key: 'bulk:3', value: 'Third bulk item' }
+                    ]
+                });
+
+                logRequest(result);
+            } catch (error) {
+                logError(error);
+            }
+        };
+
+        function log(message) {
+            const output = document.getElementById('output');
+            output.innerHTML += `<pre>${message}</pre>`;
+        }
+
+        function logRequest(result) {
+            const output = document.getElementById('output');
+            const html = `
+                <div class="request">
+                    <strong>${result.debug.method} ${result.debug.path}</strong><br>
+                    <span class="timestamp">Timestamp: ${result.debug.timestamp}</span><br>
+                    <span class="signature">Signature: ${result.debug.signature}</span><br>
+                    <span class="${result.success ? 'success' : 'error'}">
+                        Status: ${result.status} ${result.success ? '✓' : '✗'}
+                    </span><br>
+                    <details>
+                        <summary>Response Data</summary>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                    </details>
+                    <details>
+                        <summary>Debug Info</summary>
+                        <pre>Message to sign: ${result.debug.message}
+Full signature: ${result.debug.fullSignature}</pre>
+                    </details>
+                </div>
+            `;
+            output.innerHTML += html;
+        }
+
+        function logError(error) {
+            const output = document.getElementById('output');
+            output.innerHTML += `<pre class="error">Error: ${error.message}</pre>`;
+        }
+
+        window.clearLogs = function() {
+            document.getElementById('output').innerHTML = '';
+        };
+    </script>
+</body>
+</html>
