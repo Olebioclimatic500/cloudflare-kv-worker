@@ -115,6 +115,8 @@ app.get('/', (c) => {
 app.get(
   '/kv/:key',
   describeRoute({
+    tags: ['Read Operations'],
+    summary: 'Get single value',
     description: 'Get a single KV value by key',
     parameters: [
       {
@@ -214,6 +216,8 @@ app.get(
 app.post(
   '/kv/batch',
   describeRoute({
+    tags: ['Read Operations'],
+    summary: 'Batch get values',
     description: 'Get multiple KV values by keys (max 100 keys)',
     requestBody: {
       description: 'Batch request body',
@@ -308,6 +312,8 @@ app.post(
 app.get(
   '/kv/:key/metadata',
   describeRoute({
+    tags: ['Read Operations'],
+    summary: 'Get value with metadata',
     description: 'Get a single KV value with its metadata by key',
     parameters: [
       {
@@ -417,6 +423,8 @@ app.get(
 app.post(
   '/kv/batch/metadata',
   describeRoute({
+    tags: ['Read Operations'],
+    summary: 'Batch get with metadata',
     description: 'Get multiple KV values with metadata by keys (max 100 keys)',
     requestBody: {
       description: 'Batch request with metadata',
@@ -517,6 +525,8 @@ app.post(
 app.get(
   '/kv',
   describeRoute({
+    tags: ['Read Operations'],
+    summary: 'List keys',
     description: 'List KV keys with optional prefix filtering and pagination support',
     parameters: [
       {
@@ -606,6 +616,8 @@ app.get(
 app.post(
   '/kv',
   describeRoute({
+    tags: ['Write Operations'],
+    summary: 'Create key-value pair (POST)',
     description: 'Write a single KV pair using POST with key in request body',
     requestBody: {
       description: 'Key-value pair data',
@@ -747,6 +759,8 @@ app.post(
 app.put(
   '/kv/:key',
   describeRoute({
+    tags: ['Write Operations'],
+    summary: 'Create/update key-value pair (PUT)',
     description: 'Write a single KV pair using PUT with key in URL path',
     parameters: [
       {
@@ -902,6 +916,8 @@ app.put(
 app.post(
   '/kv/bulk',
   describeRoute({
+    tags: ['Write Operations'],
+    summary: 'Bulk write pairs',
     description: 'Bulk write multiple KV pairs (max 10,000 pairs) with automatic retry on rate limits',
     requestBody: {
       description: 'Array of key-value pairs to write',
@@ -1080,6 +1096,8 @@ app.post(
 app.delete(
   '/kv/:key',
   describeRoute({
+    tags: ['Delete Operations'],
+    summary: 'Delete single key',
     description: 'Delete a single KV pair by key (succeeds even if key does not exist)',
     parameters: [
       {
@@ -1141,6 +1159,8 @@ app.delete(
 app.post(
   '/kv/bulk/delete',
   describeRoute({
+    tags: ['Delete Operations'],
+    summary: 'Bulk delete keys',
     description: 'Bulk delete multiple KV pairs by keys (no maximum limit)',
     requestBody: {
       description: 'Array of keys to delete',
@@ -1249,11 +1269,45 @@ app.get(
       info: {
         title: 'Cloudflare KV Worker API',
         version: '1.0.0',
-        description: 'A REST API for managing Cloudflare KV storage with support for reading, writing, and deleting key-value pairs, including batch operations and metadata management.',
+        description: `
+A high-performance REST API for managing Cloudflare KV (Key-Value) storage at the edge.
+
+## Features
+
+- 🚀 **Edge Computing** - Runs on Cloudflare's global network for low latency
+- 📦 **Batch Operations** - Get up to 100 keys in a single request
+- 🔄 **Bulk Operations** - Write up to 10,000 key-value pairs at once
+- 🏷️ **Metadata Support** - Attach custom metadata to any key-value pair
+- ⏱️ **TTL Support** - Set expiration times for automatic cleanup
+- 🔍 **Pagination** - List keys with prefix filtering and cursor-based pagination
+- 🔁 **Automatic Retries** - Built-in retry logic for rate-limited operations
+
+## Rate Limits
+
+- Maximum 1 write per second per key
+- Batch GET: Up to 100 keys per request
+- Bulk WRITE: Up to 10,000 pairs per request
+- Bulk DELETE: No limit
+
+## Key Constraints
+
+- Keys must be 1-512 characters
+- Keys cannot be "." or ".."
+- Values are stored as strings (JSON objects are automatically stringified)
+        `,
+        contact: {
+          name: 'API Support',
+          url: 'https://github.com/yourusername/cloudflare-kv-worker',
+        },
+        license: {
+          name: 'MIT',
+          url: 'https://opensource.org/licenses/MIT',
+        },
       },
-      servers: [
-        { url: 'http://localhost:8787', description: 'Local Development Server' },
-        { url: 'https://your-worker.your-subdomain.workers.dev', description: 'Production Server' },
+      tags: [
+        { name: 'Read Operations', description: 'Retrieve key-value pairs, including single, batch, and list operations' },
+        { name: 'Write Operations', description: 'Create and update key-value pairs with support for metadata and TTL' },
+        { name: 'Delete Operations', description: 'Remove key-value pairs individually or in bulk' },
       ],
     },
   })
@@ -1287,6 +1341,10 @@ app.get(
     expandAllModelSections: false,
     orderSchemaPropertiesBy: 'alpha',
     orderRequiredPropertiesFirst: true,
+    defaultHttpClient: {
+      targetKey: 'js',
+      clientKey: 'fetch',
+    }
   })
 );
 
