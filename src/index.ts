@@ -715,7 +715,7 @@ app.post(
   '/kv',
   describeRoute({
     tags: ['Write Operations'],
-    summary: 'Create key-value pair (POST)',
+    summary: 'Create key-value pair',
     description: 'Write a single KV pair using POST with key in request body',
     requestBody: {
       description: 'Key-value pair data',
@@ -858,7 +858,7 @@ app.put(
   '/kv/:key',
   describeRoute({
     tags: ['Write Operations'],
-    summary: 'Create/update key-value pair (PUT)',
+    summary: 'Create/update key-value pair',
     description: 'Write a single KV pair using PUT with key in URL path',
     parameters: [
       {
@@ -1477,18 +1477,12 @@ app.get(
     operationTitleSource: 'summary',
     _integration: 'hono',
     persistAuth: false,
-    telemetry: true,
     isEditable: false,
     isLoading: false,
-    hideModels: false,
     documentDownloadType: 'both',
-    hideTestRequestButton: false,
-    hideSearch: false,
-    showOperationId: false,
     hideDarkModeToggle: false,
     withDefaultFonts: true,
-    defaultOpenAllTags: false,
-    expandAllModelSections: false,
+    defaultOpenAllTags: true,
     orderSchemaPropertiesBy: 'alpha',
     orderRequiredPropertiesFirst: true,
     defaultHttpClient: {
