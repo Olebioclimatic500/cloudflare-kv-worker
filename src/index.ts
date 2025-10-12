@@ -2,7 +2,102 @@ import { Hono } from 'hono';
 import * as v from 'valibot';
 import { describeRoute, openAPIRouteHandler, resolver } from 'hono-openapi';
 import { vValidator } from '@hono/valibot-validator';
-import { apiReference, Scalar } from '@scalar/hono-api-reference';
+import { Scalar } from '@scalar/hono-api-reference';
+import type { Context, Next } from 'hono';
+
+// HMAC Authentication Middleware
+async function hmacAuth(c: Context<{ Bindings: CloudflareBindings }>, next: Next) {
+  // Skip auth for OpenAPI and docs endpoints
+  if (c.req.path === '/api/v1/openapi' || c.req.path === '/api/v1/docs' || c.req.path === '/api/v1/') {
+    return next();
+  }
+
+  const authHeader = c.req.header('Authorization');
+  const timestamp = c.req.header('X-Timestamp');
+  const signature = c.req.header('X-Signature');
+
+  // Check for required headers
+  if (!authHeader && !signature) {
+    return c.json({ error: 'Missing authentication. Provide either Authorization header or X-Signature + X-Timestamp headers.' }, 401);
+  }
+
+  const secretKey = c.env.AUTH_SECRET_KEY;
+  if (!secretKey) {
+    return c.json({ error: 'Server authentication not configured' }, 500);
+  }
+
+  try {
+    // Method 1: Bearer token (simple API key)
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      if (token === secretKey) {
+        return next();
+      }
+      return c.json({ error: 'Invalid authentication token' }, 401);
+    }
+
+    // Method 2: HMAC signature
+    if (signature && timestamp) {
+      const currentTime = Date.now();
+      const requestTime = Number.parseInt(timestamp, 10);
+
+      // Check timestamp is within 5 minutes
+      if (Math.abs(currentTime - requestTime) > 300000) {
+        return c.json({ error: 'Request timestamp expired. Ensure your clock is synchronized.' }, 401);
+      }
+
+      // Create message to sign: METHOD + PATH + TIMESTAMP + BODY
+      const method = c.req.method;
+      const path = c.req.path;
+      let body = '';
+
+      if (method !== 'GET' && method !== 'DELETE') {
+        try {
+          const rawBody = await c.req.text();
+          body = rawBody;
+          // Clone request with the body for downstream handlers
+          c.req.raw = new Request(c.req.raw, { body });
+        } catch (e) {
+          // No body or already consumed
+        }
+      }
+
+      const message = `${method}${path}${timestamp}${body}`;
+
+      // Generate HMAC-SHA256 signature
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(secretKey);
+      const messageData = encoder.encode(message);
+
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        keyData,
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      );
+
+      const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+      const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+
+      if (signature.toLowerCase() === expectedSignature.toLowerCase()) {
+        return next();
+      }
+
+      return c.json({
+        error: 'Invalid HMAC signature',
+        hint: 'Signature should be HMAC-SHA256 of: METHOD + PATH + TIMESTAMP + BODY'
+      }, 401);
+    }
+
+    return c.json({ error: 'Invalid authentication method' }, 401);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return c.json({ error: `Authentication error: ${errorMessage}` }, 500);
+  }
+}
 
 // Valibot Schemas
 const keyParamSchema = v.object({
@@ -106,6 +201,9 @@ const bulkResponseSchema = v.object({
 });
 
 const app = new Hono<{ Bindings: CloudflareBindings }>().basePath('/api/v1');
+
+// Apply HMAC authentication middleware to all routes
+app.use('*', hmacAuth);
 
 app.get('/', (c) => {
   return c.json({ message: 'Cloudflare KV Worker API', version: '1.0.0' });
@@ -1270,6 +1368,8 @@ app.get(
         title: 'Cloudflare KV Worker API',
         version: '1.0.0',
         description: `
+
+# Getting Started
 A high-performance REST API for managing Cloudflare KV (Key-Value) storage at the edge.
 
 ## Features
@@ -1308,6 +1408,51 @@ A high-performance REST API for managing Cloudflare KV (Key-Value) storage at th
         { name: 'Read Operations', description: 'Retrieve key-value pairs, including single, batch, and list operations' },
         { name: 'Write Operations', description: 'Create and update key-value pairs with support for metadata and TTL' },
         { name: 'Delete Operations', description: 'Remove key-value pairs individually or in bulk' },
+      ],
+      components: {
+        securitySchemes: {
+          BearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            description: 'Simple API key authentication. Use your AUTH_SECRET_KEY as the bearer token.',
+          },
+          HMACAuth: {
+            type: 'apiKey',
+            in: 'header',
+            name: 'X-Signature',
+            description: `HMAC-SHA256 signature authentication. Required headers:
+- **X-Signature**: HMAC-SHA256 hex signature
+- **X-Timestamp**: Unix timestamp in milliseconds
+
+**Signature Generation:**
+1. Create message: \`METHOD + PATH + TIMESTAMP + BODY\`
+2. Generate HMAC-SHA256 using your secret key
+3. Convert to hex string
+
+**Example (JavaScript):**
+\`\`\`javascript
+const crypto = require('crypto');
+const method = 'POST';
+const path = '/api/v1/kv';
+const timestamp = Date.now().toString();
+const body = JSON.stringify({ key: 'test', value: 'data' });
+const message = method + path + timestamp + body;
+const signature = crypto.createHmac('sha256', secretKey)
+  .update(message)
+  .digest('hex');
+
+// Send request with headers:
+// X-Signature: <signature>
+// X-Timestamp: <timestamp>
+\`\`\`
+
+Timestamp must be within 5 minutes of server time.`,
+          },
+        },
+      },
+      security: [
+        { BearerAuth: [] },
+        { HMACAuth: [] },
       ],
     },
   })
