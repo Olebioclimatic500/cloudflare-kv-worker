@@ -33,6 +33,14 @@ const putRequestSchema = v.object({
 	metadata: v.optional(v.record(v.string(), v.any()))
 })
 
+const postRequestSchema = v.object({
+	key: v.pipe(v.string(), v.minLength(1), v.maxLength(512)),
+	value: v.any(),
+	expiration: v.optional(v.number()),
+	expirationTtl: v.optional(v.pipe(v.number(), v.minValue(60))),
+	metadata: v.optional(v.record(v.string(), v.any()))
+})
+
 const bulkWritePairSchema = v.object({
 	key: v.pipe(v.string(), v.minLength(1), v.maxLength(512)),
 	value: v.any(),
@@ -358,10 +366,82 @@ app.get('/kv',
   }
 )
 
-// Write a single KV pair
+// Write a single KV pair (POST)
+app.post('/kv',
+  describeRoute({
+    description: 'Write a single KV pair using POST',
+    responses: {
+      201: {
+        description: 'Successfully created',
+        content: {
+          'application/json': { schema: resolver(successResponseSchema) }
+        }
+      },
+      400: {
+        description: 'Bad request',
+        content: {
+          'application/json': { schema: resolver(errorResponseSchema) }
+        }
+      },
+      429: {
+        description: 'Rate limit exceeded',
+        content: {
+          'application/json': { schema: resolver(errorResponseSchema) }
+        }
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': { schema: resolver(errorResponseSchema) }
+        }
+      }
+    }
+  }),
+  vValidator('json', postRequestSchema),
+  async (c) => {
+    try {
+      const { key, value, expiration, expirationTtl, metadata } = c.req.valid('json')
+
+      // Additional key validation
+      if (key === '.' || key === '..') {
+        return c.json({ error: 'Invalid key. Key cannot be "." or ".."' }, 400)
+      }
+
+      // Build options object
+      const options: KVNamespacePutOptions = {}
+      if (expiration !== undefined) options.expiration = expiration
+      if (expirationTtl !== undefined) options.expirationTtl = expirationTtl
+      if (metadata !== undefined) options.metadata = metadata
+
+      // Convert value to string if it's an object
+      const valueToStore = typeof value === 'object' ? JSON.stringify(value) : String(value)
+
+      await c.env.CF_WORKER_API_KV.put(key, valueToStore, options)
+
+      return c.json({
+        success: true,
+        key,
+        message: 'Key-value pair written successfully'
+      }, 201)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+
+      // Handle rate limiting errors
+      if (errorMessage.includes('429')) {
+        return c.json({
+          error: 'Rate limit exceeded. Maximum 1 write per second to the same key.'
+        }, 429)
+      }
+
+      return c.json({ error: errorMessage }, 500)
+    }
+  }
+)
+
+// Write a single KV pair (PUT)
 app.put('/kv/:key',
   describeRoute({
-    description: 'Write a single KV pair',
+    description: 'Write a single KV pair using PUT with key in URL',
     responses: {
       201: {
         description: 'Successfully created',
