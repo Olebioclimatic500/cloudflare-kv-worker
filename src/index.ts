@@ -1372,6 +1372,8 @@ app.get(
 # Getting Started
 A high-performance REST API for managing Cloudflare KV (Key-Value) storage at the edge.
 
+Created by [kulterryan](https://github.com/kulterryan) | Follow on [X/Twitter](https://x.com/thehungrybird_)
+
 ## Features
 
 - 🚀 **Edge Computing** - Runs on Cloudflare's global network for low latency
@@ -1463,6 +1465,7 @@ app.get(
   '/docs',
   Scalar({
     url: '/api/v1/openapi',
+    pageTitle: 'Cloudflare KV Worker API - Documentation',
     layout: 'modern',
     hideClientButton: true,
     expandAllResponses: true,
