@@ -91,6 +91,55 @@ export class KVClient {
   }
 
   /**
+   * Create a KVClient instance from environment variables
+   * Expects: KV_API_URL and KV_API_TOKEN to be set
+   * Optional: KV_API_TIMEOUT (defaults to 30000ms)
+   *
+   * @example
+   * // Automatically reads from process.env
+   * const client = KVClient.fromEnv();
+   *
+   * @example
+   * // With custom environment variable names
+   * const client = KVClient.fromEnv({
+   *   urlKey: 'MY_KV_URL',
+   *   tokenKey: 'MY_KV_TOKEN',
+   *   timeoutKey: 'MY_KV_TIMEOUT'
+   * });
+   */
+  static fromEnv(options?: {
+    urlKey?: string;
+    tokenKey?: string;
+    timeoutKey?: string;
+  }): KVClient {
+    const urlKey = options?.urlKey || 'KV_API_URL';
+    const tokenKey = options?.tokenKey || 'KV_API_TOKEN';
+    const timeoutKey = options?.timeoutKey || 'KV_API_TIMEOUT';
+
+    const baseUrl = process.env[urlKey];
+    const token = process.env[tokenKey];
+    const timeoutStr = process.env[timeoutKey];
+
+    if (!baseUrl) {
+      throw new Error(`Environment variable ${urlKey} is not set`);
+    }
+    if (!token) {
+      throw new Error(`Environment variable ${tokenKey} is not set`);
+    }
+
+    const timeout = timeoutStr ? parseInt(timeoutStr, 10) : undefined;
+    if (timeout !== undefined && isNaN(timeout)) {
+      throw new Error(`Environment variable ${timeoutKey} must be a valid number`);
+    }
+
+    return new KVClient({
+      baseUrl,
+      auth: { type: 'bearer', token },
+      timeout,
+    });
+  }
+
+  /**
    * Generate HMAC-SHA256 signature for a request
    */
   private async generateHMACSignature(
@@ -335,4 +384,29 @@ export function createBrowserClient(options: {
     auth: { type: 'hmac', secretKey: options.secretKey },
     timeout: options.timeout,
   });
+}
+
+/**
+ * Create a server client from environment variables
+ * Expects: KV_API_URL and KV_API_TOKEN to be set
+ * Optional: KV_API_TIMEOUT (defaults to 30000ms)
+ *
+ * @example
+ * // Using default environment variable names
+ * const client = createServerClientFromEnv();
+ *
+ * @example
+ * // Using custom environment variable names
+ * const client = createServerClientFromEnv({
+ *   urlKey: 'MY_KV_URL',
+ *   tokenKey: 'MY_KV_TOKEN',
+ *   timeoutKey: 'MY_KV_TIMEOUT'
+ * });
+ */
+export function createServerClientFromEnv(options?: {
+  urlKey?: string;
+  tokenKey?: string;
+  timeoutKey?: string;
+}): KVClient {
+  return KVClient.fromEnv(options);
 }

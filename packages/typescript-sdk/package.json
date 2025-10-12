@@ -2,7 +2,31 @@
   "name": "@cloudflare-kv/typescript-sdk",
   "version": "0.1.0",
   "type": "module",
-  "description": "TypeScript SDK for Cloudflare KV Worker API",
+  "description": "TypeScript SDK for Cloudflare KV Worker API with dual authentication support (Bearer token for server-side, HMAC for browser)",
+  "author": "Kulter Ryan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kulterryan/cloudflare-kv-worker.git",
+    "directory": "packages/typescript-sdk"
+  },
+  "homepage": "https://github.com/kulterryan/cloudflare-kv-worker#readme",
+  "bugs": {
+    "url": "https://github.com/kulterryan/cloudflare-kv-worker/issues"
+  },
+  "keywords": [
+    "cloudflare",
+    "kv",
+    "workers",
+    "typescript",
+    "sdk",
+    "api",
+    "hmac",
+    "authentication",
+    "key-value",
+    "storage",
+    "edge"
+  ],
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -13,11 +37,17 @@
       "require": "./dist/index.js"
     }
   },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "bun run build"
   },
   "devDependencies": {
     "tsup": "^8.0.1",
@@ -26,5 +56,8 @@
   },
   "peerDependencies": {
     "typescript": ">=4.5.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

@@ -1,6 +1,7 @@
 export {
   KVClient,
   createServerClient,
+  createServerClientFromEnv,
   createBrowserClient,
   type KVClientOptions,
   type AuthOptions,

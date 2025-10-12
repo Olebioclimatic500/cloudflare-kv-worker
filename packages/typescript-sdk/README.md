@@ -21,6 +21,28 @@ This SDK supports two authentication methods:
 
 Use Bearer token authentication for server-side applications where you can securely store secrets:
 
+#### Easy Setup with Environment Variables
+
+```typescript
+import { createServerClientFromEnv, KVClient } from '@cloudflare-kv/typescript-sdk';
+
+// Method 1: Using the helper function (recommended)
+// Expects: KV_API_URL and KV_API_TOKEN environment variables
+const client = createServerClientFromEnv();
+
+// Method 2: Using the static method
+const client = KVClient.fromEnv();
+
+// Method 3: Custom environment variable names
+const client = createServerClientFromEnv({
+  urlKey: 'MY_KV_URL',      // instead of KV_API_URL
+  tokenKey: 'MY_KV_TOKEN',   // instead of KV_API_TOKEN
+  timeoutKey: 'MY_TIMEOUT'   // instead of KV_API_TIMEOUT (optional)
+});
+```
+
+#### Manual Configuration
+
 ```typescript
 import { createServerClient } from '@cloudflare-kv/typescript-sdk';
 
