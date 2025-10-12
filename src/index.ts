@@ -1372,7 +1372,7 @@ app.get(
 # Getting Started
 A high-performance REST API for managing Cloudflare KV (Key-Value) storage at the edge.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/kulterryan/cloudflare-kv-worker)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://dub.sh/L1aS7JO)
 
 Created by [kulterryan](https://github.com/kulterryan) | Follow on [X/Twitter](https://x.com/thehungrybird_)
 

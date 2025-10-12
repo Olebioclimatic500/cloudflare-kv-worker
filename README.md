@@ -1,6 +1,6 @@
 # Cloudflare KV Worker API
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/kulterryan/cloudflare-kv-worker)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://dub.sh/L1aS7JO)
 
 A high-performance REST API for managing Cloudflare KV (Key-Value) storage at the edge, built with Hono and TypeScript.
 
@@ -18,9 +18,36 @@ A high-performance REST API for managing Cloudflare KV (Key-Value) storage at th
 
 ## Table of Contents
 
+- [Quick Start](#quick-start)
 - [API Documentation](#api-documentation)
 - [Authentication](#authentication)
 - [Contributing](#contributing)
+
+## Quick Start
+
+### Prerequisites
+
+- [Bun](https://bun.sh/) installed
+- Cloudflare account with Workers access
+- KV namespace created
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd cloudflare-kv-worker
+
+# Install dependencies
+bun install
+
+# Start development server
+bun run dev
+```
+
+The API will be available at `http://localhost:8787/api/v1`
+
+For detailed development setup, see [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## API Documentation
 
@@ -54,6 +81,45 @@ All API endpoints require authentication using either:
 - **HMAC-SHA256 Signature** - Secure request signing with timestamp validation
 
 For complete authentication documentation, setup instructions, and security best practices, see [docs/AUTH.md](docs/AUTH.md).
+
+## Deployment
+
+### 1. Set Secrets
+
+```bash
+# Set your authentication secret
+wrangler secret put AUTH_SECRET_KEY
+# Enter your secret when prompted
+```
+
+### 2. Update Configuration
+
+Edit `wrangler.jsonc` to update:
+- Worker name
+- KV namespace ID (if using a different namespace)
+- Routes and domains
+
+### 3. Deploy
+
+```bash
+bun run deploy
+```
+
+Your API will be deployed to:
+```
+https://your-worker.your-subdomain.workers.dev
+```
+
+### 4. Update Production URLs
+
+After deployment, update the server URLs in `src/index.ts`:
+
+```typescript
+servers: [
+  { url: 'http://localhost:8787', description: 'Local Development Server' },
+  { url: 'https://your-worker.your-subdomain.workers.dev', description: 'Production Server' },
+]
+```
 
 ## Rate Limits & Constraints
 
