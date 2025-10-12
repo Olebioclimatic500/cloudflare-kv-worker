@@ -206,7 +206,7 @@ const app = new Hono<{ Bindings: CloudflareBindings }>().basePath('/api/v1');
 app.use('*', hmacAuth);
 
 app.get('/', (c) => {
-  return c.json({ message: 'Cloudflare KV Worker API', version: '1.0.0' });
+  return c.json({ message: 'Cloudflare KV Worker API', version: '1.0.0', docs: '/api/v1/docs' });
 });
 
 // Get a single KV value
@@ -1376,13 +1376,13 @@ Created by [kulterryan](https://github.com/kulterryan) | Follow on [X/Twitter](h
 
 ## Features
 
-- 🚀 **Edge Computing** - Runs on Cloudflare's global network for low latency
-- 📦 **Batch Operations** - Get up to 100 keys in a single request
-- 🔄 **Bulk Operations** - Write up to 10,000 key-value pairs at once
-- 🏷️ **Metadata Support** - Attach custom metadata to any key-value pair
-- ⏱️ **TTL Support** - Set expiration times for automatic cleanup
-- 🔍 **Pagination** - List keys with prefix filtering and cursor-based pagination
-- 🔁 **Automatic Retries** - Built-in retry logic for rate-limited operations
+- **Edge Computing** - Runs on Cloudflare's global network for low latency
+- **Batch Operations** - Get up to 100 keys in a single request
+- **Bulk Operations** - Write up to 10,000 key-value pairs at once
+- **Metadata Support** - Attach custom metadata to any key-value pair
+- **TTL Support** - Set expiration times for automatic cleanup
+- **Pagination** - List keys with prefix filtering and cursor-based pagination
+- **Automatic Retries** - Built-in retry logic for rate-limited operations
 
 ## Rate Limits
 
@@ -1496,4 +1496,15 @@ app.get(
   })
 );
 
-export default app;
+// Create root app to handle root path redirect
+const rootApp = new Hono<{ Bindings: CloudflareBindings }>();
+
+// Redirect root to docs
+rootApp.get('/', (c) => {
+  return c.redirect('/api/v1/docs');
+});
+
+// Mount the API routes
+rootApp.route('/', app);
+
+export default rootApp;
