@@ -1,6 +1,14 @@
 {
   "name": "cloudflare-kv-worker",
   "type": "module",
+  "version": "1.0.0",
+  "author": {
+    "name": "Aryan Chaurasia",
+    "email": "chaurasia.aryan@yahoo.com",
+    "url": "https://aryn.dev"
+  },
+  "license": "MIT",
+  "description": "A Cloudflare Worker using Hono framework with KV storage.",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --minify",
