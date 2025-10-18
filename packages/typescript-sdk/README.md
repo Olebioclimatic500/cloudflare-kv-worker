@@ -1,6 +1,8 @@
 # Cloudflare KV TypeScript SDK
 
-TypeScript/JavaScript SDK for interacting with the Cloudflare KV Worker API with support for both server-side and browser authentication.
+> ⚠️ **SERVER-SIDE ONLY**: This SDK is designed exclusively for server-side use. Do not use in browser/client-side applications.
+
+TypeScript/JavaScript SDK for interacting with the Cloudflare KV Worker API with Bearer token and HMAC authentication support.
 
 ## Installation
 
@@ -10,16 +12,27 @@ npm install @cloudflare-kv/typescript-sdk
 bun add @cloudflare-kv/typescript-sdk
 ```
 
+## Supported Environments
+
+This SDK is designed for server-side use in:
+- Node.js (v18+)
+- Deno
+- Bun
+- Cloudflare Workers
+- Other server-side JavaScript runtimes
+
+The SDK will automatically prevent usage in browser environments to protect your credentials.
+
 ## Authentication Methods
 
 This SDK supports two authentication methods:
 
-1. **Bearer Token** (Server-side) - Simple token-based auth for secure server environments
-2. **HMAC Signature** (Client-side) - Cryptographic signature-based auth for browser/client applications
+1. **Bearer Token** (Recommended) - Simple token-based auth
+2. **HMAC Signature** - Cryptographic signature-based auth for server-to-server communication
 
-### Server-Side Usage (Node.js, Deno, Bun)
+### Basic Usage
 
-Use Bearer token authentication for server-side applications where you can securely store secrets:
+Use Bearer token authentication for most server-side applications:
 
 #### Easy Setup with Environment Variables
 
@@ -56,35 +69,25 @@ await client.put('user:123', { name: 'John Doe' });
 const user = await client.get('user:123');
 ```
 
-### Client-Side Usage (Browser, React, Vue, etc.)
+### HMAC Authentication (Advanced)
 
-Use HMAC authentication for browser applications. **The SDK automatically generates a unique HMAC signature for every request**:
+For server-to-server communication, you can use HMAC authentication:
 
 ```typescript
-import { createBrowserClient } from '@cloudflare-kv/typescript-sdk';
+import { KVClient } from '@cloudflare-kv/typescript-sdk';
 
-const client = createBrowserClient({
+const client = new KVClient({
   baseUrl: 'https://your-worker.workers.dev',
-  secretKey: process.env.REACT_APP_AUTH_SECRET_KEY, // Use same AUTH_SECRET_KEY as your Worker
+  auth: {
+    type: 'hmac',
+    secretKey: process.env.HMAC_SECRET_KEY,
+  },
 });
-
-// Every request gets a unique signature automatically!
-await client.put('preferences:user123', { theme: 'dark' });  // Signature A + Timestamp A
-await client.get('preferences:user123');                       // Signature B + Timestamp B
-await client.delete('old:data');                              // Signature C + Timestamp C
 ```
 
-#### How HMAC Works (Automatic):
+The SDK automatically generates a unique HMAC signature for each request using the current timestamp and request details.
 
-1. **Each request generates**: New timestamp (`Date.now()`)
-2. **SDK creates message**: `METHOD + PATH + TIMESTAMP + BODY`
-3. **Signature calculated**: `HMAC-SHA256(secretKey, message)`
-4. **Headers added**: `X-Signature` and `X-Timestamp`
-5. **Server validates**: Signature match + timestamp within 5 minutes
-
-**No manual work needed - just create the client and use it!**
-
-## Basic Usage
+## API Reference
 
 ```typescript
 // Write a value

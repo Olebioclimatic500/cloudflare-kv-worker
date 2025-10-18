@@ -1,27 +1,93 @@
+/**
+ * React usage examples for Cloudflare KV SDK
+ *
+ * This SDK is SERVER-SIDE ONLY. For React apps, you should:
+ * 1. Use the SDK in your backend API (Node.js, Express, etc.)
+ * 2. Create API endpoints that use the KV client
+ * 3. Call those endpoints from your React components using fetch/axios
+ *
+ * This file demonstrates how to structure your React app to work with
+ * the server-side KV SDK.
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { createBrowserClient, type KVClient } from '../src';
+
+// ============================================
+// Backend API Setup (Express/Node.js example)
+// ============================================
 
 /**
- * React Hook: useKVClient
- * Creates a singleton KV client instance that automatically signs all requests with HMAC
+ * Example backend server setup
+ * backend/server.ts
  */
-export function useKVClient() {
-  const [client] = useState<KVClient>(() =>
-    createBrowserClient({
-      baseUrl: process.env.REACT_APP_API_URL || 'http://localhost:8787',
-      secretKey: process.env.REACT_APP_AUTH_SECRET_KEY || '',
-    })
-  );
 
-  return client;
-}
+/*
+import express from 'express';
+import { createServerClient } from '@cloudflare-kv/typescript-sdk';
+
+const app = express();
+app.use(express.json());
+
+// Initialize KV client on the server
+const kvClient = createServerClient({
+  baseUrl: process.env.KV_API_URL!,
+  token: process.env.KV_API_TOKEN!,
+});
+
+// API endpoints
+app.get('/api/kv/:key', async (req, res) => {
+  try {
+    const result = await kvClient.get(req.params.key);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch data' });
+  }
+});
+
+app.post('/api/kv/:key', async (req, res) => {
+  try {
+    await kvClient.put(req.params.key, req.body.value, req.body.options);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to save data' });
+  }
+});
+
+app.delete('/api/kv/:key', async (req, res) => {
+  try {
+    await kvClient.delete(req.params.key);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete data' });
+  }
+});
+
+app.get('/api/kv-list', async (req, res) => {
+  try {
+    const result = await kvClient.list({
+      prefix: req.query.prefix as string,
+      limit: req.query.limit ? parseInt(req.query.limit as string) : 100,
+    });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to list keys' });
+  }
+});
+
+app.listen(3001, () => {
+  console.log('API server running on http://localhost:3001');
+});
+*/
+
+// ============================================
+// React Frontend Components
+// ============================================
 
 /**
  * React Hook: useKVStore
- * High-level hook for common KV operations with loading states
+ * Fetches and manages KV data through your API
  */
 export function useKVStore<T = any>(key: string) {
-  const client = useKVClient();
   const [value, setValue] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -30,7 +96,10 @@ export function useKVStore<T = any>(key: string) {
     setLoading(true);
     setError(null);
     try {
-      const result = await client.get<T>(key);
+      // Call your backend API
+      const response = await fetch(`/api/kv/${encodeURIComponent(key)}`);
+      if (!response.ok) throw new Error('Failed to fetch');
+      const result = await response.json();
       setValue(result.value);
       return result.value;
     } catch (err) {
@@ -39,13 +108,21 @@ export function useKVStore<T = any>(key: string) {
     } finally {
       setLoading(false);
     }
-  }, [client, key]);
+  }, [key]);
 
   const set = useCallback(async (newValue: T, ttl?: number) => {
     setLoading(true);
     setError(null);
     try {
-      await client.put(key, newValue, ttl ? { expirationTtl: ttl } : {});
+      const response = await fetch(`/api/kv/${encodeURIComponent(key)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          value: newValue,
+          options: ttl ? { expirationTtl: ttl } : {},
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to save');
       setValue(newValue);
     } catch (err) {
       setError(err as Error);
@@ -53,13 +130,16 @@ export function useKVStore<T = any>(key: string) {
     } finally {
       setLoading(false);
     }
-  }, [client, key]);
+  }, [key]);
 
   const remove = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      await client.delete(key);
+      const response = await fetch(`/api/kv/${encodeURIComponent(key)}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete');
       setValue(null);
     } catch (err) {
       setError(err as Error);
@@ -67,7 +147,7 @@ export function useKVStore<T = any>(key: string) {
     } finally {
       setLoading(false);
     }
-  }, [client, key]);
+  }, [key]);
 
   useEffect(() => {
     get().catch(() => {}); // Initial fetch
@@ -85,10 +165,9 @@ export function useKVStore<T = any>(key: string) {
 
 /**
  * React Hook: useKVList
- * Hook for paginated key listing
+ * Hook for paginated key listing through your API
  */
 export function useKVList(prefix: string = '', limit: number = 100) {
-  const client = useKVClient();
   const [keys, setKeys] = useState<string[]>([]);
   const [cursor, setCursor] = useState<string | undefined>();
   const [hasMore, setHasMore] = useState(false);
@@ -97,13 +176,18 @@ export function useKVList(prefix: string = '', limit: number = 100) {
   const loadKeys = useCallback(async (reset = false) => {
     setLoading(true);
     try {
-      const result = await client.list({
+      const params = new URLSearchParams({
         prefix,
-        limit,
-        cursor: reset ? undefined : cursor,
+        limit: limit.toString(),
+        ...(cursor && !reset ? { cursor } : {}),
       });
 
-      const keyNames = result.keys.map(k => k.name);
+      const response = await fetch(`/api/kv-list?${params}`);
+      if (!response.ok) throw new Error('Failed to load keys');
+
+      const result = await response.json();
+      const keyNames = result.keys.map((k: any) => k.name);
+
       setKeys(reset ? keyNames : [...keys, ...keyNames]);
       setCursor(result.cursor);
       setHasMore(!result.list_complete);
@@ -112,7 +196,7 @@ export function useKVList(prefix: string = '', limit: number = 100) {
     } finally {
       setLoading(false);
     }
-  }, [client, prefix, limit, cursor, keys]);
+  }, [prefix, limit, cursor, keys]);
 
   const refresh = () => loadKeys(true);
   const loadMore = () => loadKeys(false);
@@ -166,7 +250,6 @@ export function UserPreferencesComponent({ userId }: { userId: string }) {
  * Example: Session Manager Component
  */
 export function SessionManager() {
-  const client = useKVClient();
   const { keys, refresh, loading } = useKVList('session:');
   const [creating, setCreating] = useState(false);
 
@@ -174,16 +257,21 @@ export function SessionManager() {
     setCreating(true);
     try {
       const sessionId = `session:${Date.now()}`;
-      await client.put(
-        sessionId,
-        {
-          userId: 'current-user',
-          loginTime: new Date().toISOString(),
-        },
-        {
-          expirationTtl: 3600, // 1 hour
-        }
-      );
+      const response = await fetch(`/api/kv/${encodeURIComponent(sessionId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          value: {
+            userId: 'current-user',
+            loginTime: new Date().toISOString(),
+          },
+          options: {
+            expirationTtl: 3600, // 1 hour
+          },
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to create session');
       refresh();
     } catch (error) {
       console.error('Failed to create session:', error);
@@ -194,7 +282,10 @@ export function SessionManager() {
 
   const deleteSession = async (sessionKey: string) => {
     try {
-      await client.delete(sessionKey);
+      const response = await fetch(`/api/kv/${encodeURIComponent(sessionKey)}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete session');
       refresh();
     } catch (error) {
       console.error('Failed to delete session:', error);
@@ -227,21 +318,27 @@ export function SessionManager() {
  * Example: Data Sync Component
  */
 export function DataSyncComponent() {
-  const client = useKVClient();
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
 
   const syncData = async () => {
     setSyncing(true);
     try {
-      // Bulk write example
-      const result = await client.bulkWrite([
-        { key: 'sync:timestamp', value: new Date().toISOString() },
-        { key: 'sync:data:1', value: { type: 'user', data: 'sample1' } },
-        { key: 'sync:data:2', value: { type: 'settings', data: 'sample2' } },
-        { key: 'sync:data:3', value: { type: 'cache', data: 'sample3' } },
-      ]);
+      // Call your backend bulk write endpoint
+      const response = await fetch('/api/kv-bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pairs: [
+            { key: 'sync:timestamp', value: new Date().toISOString() },
+            { key: 'sync:data:1', value: { type: 'user', data: 'sample1' } },
+            { key: 'sync:data:2', value: { type: 'settings', data: 'sample2' } },
+            { key: 'sync:data:3', value: { type: 'cache', data: 'sample3' } },
+          ],
+        }),
+      });
 
+      const result = await response.json();
       if (result.success) {
         setLastSync(new Date());
         console.log(`Synced ${result.successful} items`);
@@ -269,7 +366,7 @@ export function DataSyncComponent() {
 }
 
 /**
- * Example: App Component putting it all together
+ * Example: App Component
  */
 export function App() {
   const [userId] = useState('user123');
@@ -277,6 +374,7 @@ export function App() {
   return (
     <div>
       <h1>Cloudflare KV React Example</h1>
+      <p>All KV operations are handled through backend API routes</p>
 
       <UserPreferencesComponent userId={userId} />
       <hr />

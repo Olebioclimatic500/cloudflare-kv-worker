@@ -1,34 +1,25 @@
 /**
  * Next.js usage examples for Cloudflare KV SDK
- * Supports both App Router and Pages Router
+ * Server-side only - use in API routes, server components, and server-side data fetching
  */
 
-import { createBrowserClient, createServerClient, type KVClient } from '../src';
+import { createServerClient, createServerClientFromEnv } from '../src';
 
 /**
- * Client-side hook for Next.js
- * Works in both app/ and pages/ directories
+ * Get KV client for server-side use
  */
-export function useKVClient() {
-  // For client-side, use HMAC authentication
-  const client = createBrowserClient({
-    baseUrl: process.env.NEXT_PUBLIC_KV_API_URL!,
-    secretKey: process.env.NEXT_PUBLIC_AUTH_SECRET_KEY!,
+export function getKVClient() {
+  return createServerClient({
+    baseUrl: process.env.KV_API_URL!,
+    token: process.env.KV_API_TOKEN!,
   });
-
-  return client;
 }
 
 /**
- * Server-side client for Next.js
- * Use in API routes, server components, or getServerSideProps
+ * Alternative: Use environment variables
  */
-export function getServerKVClient() {
-  // For server-side, use Bearer token (more secure)
-  return createServerClient({
-    baseUrl: process.env.KV_API_URL!,
-    token: process.env.KV_API_TOKEN!, // Keep this secret, never expose to client
-  });
+export function getKVClientFromEnv() {
+  return createServerClientFromEnv();
 }
 
 // ============================================
@@ -40,7 +31,7 @@ export function getServerKVClient() {
  * app/dashboard/page.tsx
  */
 export async function DashboardPage() {
-  const client = getServerKVClient();
+  const client = getKVClient();
 
   // Fetch data on server
   const userData = await client.get('user:dashboard');
@@ -58,23 +49,31 @@ export async function DashboardPage() {
 /**
  * Client Component Example
  * app/preferences/preferences-form.tsx
+ *
+ * Client components must call an API route to interact with KV
  */
 'use client';
 
 import { useState } from 'react';
 
 export function PreferencesForm() {
-  const client = useKVClient();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [saving, setSaving] = useState(false);
 
   const savePreferences = async () => {
     setSaving(true);
     try {
-      await client.put('preferences:user', {
-        theme,
-        updatedAt: new Date().toISOString(),
+      // Call your API route instead of using the KV client directly
+      const response = await fetch('/api/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          theme,
+          updatedAt: new Date().toISOString(),
+        }),
       });
+
+      if (!response.ok) throw new Error('Failed to save');
       alert('Preferences saved!');
     } catch (error) {
       alert('Failed to save preferences');
@@ -106,7 +105,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { key: string } }
 ) {
-  const client = getServerKVClient();
+  const client = getKVClient();
 
   try {
     const result = await client.get(params.key);
@@ -123,7 +122,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { key: string } }
 ) {
-  const client = getServerKVClient();
+  const client = getKVClient();
   const body = await request.json();
 
   try {
@@ -153,7 +152,7 @@ interface ProfileProps {
 }
 
 export const getServerSideProps: GetServerSideProps<ProfileProps> = async (context) => {
-  const client = getServerKVClient();
+  const client = getKVClient();
 
   try {
     const userData = await client.get(`user:${context.query.id || 'default'}`);
@@ -176,15 +175,19 @@ export const getServerSideProps: GetServerSideProps<ProfileProps> = async (conte
 };
 
 export function ProfilePage({ userData, sessionCount }: ProfileProps) {
-  const client = useKVClient();
   const [updating, setUpdating] = useState(false);
 
   const updateProfile = async () => {
     setUpdating(true);
     try {
-      await client.put('user:profile', {
-        ...userData,
-        lastUpdated: new Date().toISOString(),
+      // Call API route to update profile
+      await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...userData,
+          lastUpdated: new Date().toISOString(),
+        }),
       });
     } finally {
       setUpdating(false);
@@ -212,7 +215,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const client = getServerKVClient();
+  const client = getKVClient();
 
   if (req.method === 'POST') {
     try {
@@ -233,13 +236,9 @@ export default async function handler(
 /**
  * .env.local (for development)
  *
- * # Server-side only (never exposed to browser)
+ * # Server-side only - never expose these to the browser
  * KV_API_URL=http://localhost:8787
  * KV_API_TOKEN=your-secret-bearer-token
- *
- * # Client-side (exposed to browser, use NEXT_PUBLIC_ prefix)
- * NEXT_PUBLIC_KV_API_URL=http://localhost:8787
- * NEXT_PUBLIC_AUTH_SECRET_KEY=your-auth-secret-key
  */
 
 // ============================================
@@ -265,6 +264,8 @@ export interface SessionData {
 /**
  * Typed KV operations
  */
+import type { KVClient } from '../src';
+
 export class TypedKVClient {
   constructor(private client: KVClient) {}
 

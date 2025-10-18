@@ -85,9 +85,36 @@ export class KVClient {
   private timeout: number;
 
   constructor(options: KVClientOptions) {
+    // Prevent client-side usage
+    this.validateServerEnvironment();
+
     this.baseUrl = options.baseUrl.replace(/\/$/, ''); // Remove trailing slash
     this.auth = options.auth;
     this.timeout = options.timeout || 30000; // 30 seconds default
+  }
+
+  /**
+   * Validates that the SDK is running in a server environment
+   * Throws an error if running in a browser
+   */
+  private validateServerEnvironment(): void {
+    // Check if running in a browser environment
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      throw new Error(
+        'This SDK is for server-side use only and cannot be used in browser environments. ' +
+        'Using this SDK in the browser would expose your API credentials to end users, creating a serious security risk. ' +
+        'Please use this SDK only in server-side environments like Node.js, Deno, Bun, or Cloudflare Workers.'
+      );
+    }
+
+    // Additional check for Web Workers (which don't have window/document but aren't secure either)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (typeof self !== 'undefined' && typeof (self as any).importScripts === 'function') {
+      throw new Error(
+        'This SDK is for server-side use only and cannot be used in Web Workers. ' +
+        'Please use this SDK only in server-side environments like Node.js, Deno, Bun, or Cloudflare Workers.'
+      );
+    }
   }
 
   /**
@@ -372,7 +399,14 @@ export function createServerClient(options: {
 }
 
 /**
- * Create a client with HMAC authentication (for browser/client-side)
+ * Create a client with HMAC authentication (for server-to-server communication)
+ *
+ * @deprecated This function name is misleading. HMAC authentication is for server-side use only.
+ * Use createServerClient() with bearer token authentication instead, or use the KVClient constructor
+ * directly if you need HMAC for server-to-server communication.
+ *
+ * WARNING: This SDK must NOT be used in browser/client-side environments as it would expose
+ * your API credentials to end users.
  */
 export function createBrowserClient(options: {
   baseUrl: string;

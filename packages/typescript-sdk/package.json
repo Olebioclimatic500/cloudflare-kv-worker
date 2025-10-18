@@ -2,7 +2,7 @@
   "name": "@cloudflare-kv/typescript-sdk",
   "version": "0.1.0",
   "type": "module",
-  "description": "TypeScript SDK for Cloudflare KV Worker API with dual authentication support (Bearer token for server-side, HMAC for browser)",
+  "description": "Server-side TypeScript SDK for Cloudflare KV Worker API with Bearer token and HMAC authentication support",
   "author": "Kulter Ryan",
   "license": "MIT",
   "repository": {
@@ -25,7 +25,11 @@
     "authentication",
     "key-value",
     "storage",
-    "edge"
+    "edge",
+    "server-side",
+    "nodejs",
+    "deno",
+    "bun"
   ],
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
