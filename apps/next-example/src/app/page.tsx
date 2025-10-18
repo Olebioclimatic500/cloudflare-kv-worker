@@ -1,9 +1,20 @@
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Counter } from '@/components/counter';
 import { getCounter } from './actions';
 
 // Force dynamic rendering to prevent build-time errors when KV API isn't accessible
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Cloudflare KV + Next.js Demo',
+  description: 'Interactive counter demo showcasing Cloudflare KV integration with Next.js, featuring server actions and real-time data persistence.',
+  openGraph: {
+    title: 'Cloudflare KV + Next.js Demo',
+    description: 'Interactive counter demo showcasing Cloudflare KV integration with Next.js, featuring server actions and real-time data persistence.',
+    type: 'website',
+  },
+};
 
 export default async function Home() {
   const initialCount = await getCounter();
