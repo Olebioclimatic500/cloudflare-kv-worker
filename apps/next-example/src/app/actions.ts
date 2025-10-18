@@ -13,10 +13,16 @@ export async function getCounter() {
   } catch (error) {
     // If key doesn't exist, return 0 and initialize it
     if (error instanceof Error && error.message.includes('Key not found')) {
-      await client.put(COUNTER_KEY, 0, { expirationTtl: ONE_HOUR_TTL });
+      try {
+        await client.put(COUNTER_KEY, 0, { expirationTtl: ONE_HOUR_TTL });
+      } catch {
+        // Silently fail if we can't initialize - might be during build
+      }
       return 0;
     }
-    throw error;
+    // If KV API is unavailable (e.g., during build or missing env vars), return 0
+    console.error('Failed to fetch counter:', error);
+    return 0;
   }
 }
 

@@ -2,6 +2,9 @@ import Image from "next/image";
 import { Counter } from "@/components/counter";
 import { getCounter } from "./actions";
 
+// Force dynamic rendering to prevent build-time errors when KV API isn't accessible
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   const initialCount = await getCounter();
 
