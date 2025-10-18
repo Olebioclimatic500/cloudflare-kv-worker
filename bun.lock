@@ -31,6 +31,7 @@
       "name": "@cloudflare-kv/next-example",
       "version": "0.1.0",
       "dependencies": {
+        "@cloudflare-kv/typescript-sdk": "workspace:*",
         "next": "15.5.4",
         "react": "19.1.0",
         "react-dom": "19.1.0",

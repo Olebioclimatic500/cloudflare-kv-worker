@@ -942,18 +942,36 @@ app.put(
       },
     },
     responses: {
-      201: {
-        description: 'Successfully created',
+      200: {
+        description: 'Resource updated successfully',
         content: {
           'application/json': {
             schema: resolver(successResponseSchema),
             examples: {
-              success: {
-                summary: 'Write successful',
+              updated: {
+                summary: 'Existing key updated',
                 value: {
                   success: true,
                   key: 'user:123',
-                  message: 'Key-value pair written successfully',
+                  message: 'Key-value pair updated successfully',
+                },
+              },
+            },
+          },
+        },
+      },
+      201: {
+        description: 'Resource created successfully',
+        content: {
+          'application/json': {
+            schema: resolver(successResponseSchema),
+            examples: {
+              created: {
+                summary: 'New key created',
+                value: {
+                  success: true,
+                  key: 'user:123',
+                  message: 'Key-value pair created successfully',
                 },
               },
             },
@@ -1008,6 +1026,10 @@ app.put(
         return c.json({ error: 'Invalid key. Key cannot be "." or ".."' }, 400);
       }
 
+      // Check if key exists
+      const existingValue = await c.env.CF_WORKER_API_KV.get(key);
+      const isNewKey = existingValue === null;
+
       // Build options object
       const options: KVNamespacePutOptions = {};
       if (expiration !== undefined) options.expiration = expiration;
@@ -1019,13 +1041,14 @@ app.put(
 
       await c.env.CF_WORKER_API_KV.put(key, valueToStore, options);
 
+      // Return 201 for new resources, 200 for updates
       return c.json(
         {
           success: true,
           key,
-          message: 'Key-value pair written successfully',
+          message: isNewKey ? 'Key-value pair created successfully' : 'Key-value pair updated successfully',
         },
-        201
+        isNewKey ? 201 : 200
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
