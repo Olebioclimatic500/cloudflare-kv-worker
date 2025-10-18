@@ -2,16 +2,23 @@
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://dub.sh/L1aS7JO)
 
-A monorepo containing a high-performance REST API for Cloudflare KV storage and client SDKs. Built with Turborepo, Hono, and TypeScript.
+A high-performance REST API for Cloudflare KV storage built with Turborepo, Hono, and TypeScript. This monorepo contains the API implementation, a Next.js example application, and a TypeScript SDK.
 
 ## Project Structure
 
 ```
+cloudflare-kv-worker/
 ├── apps/
-│   └── api/          # Cloudflare KV Worker API
+│   ├── api/               # Cloudflare KV Worker API (Hono + TypeScript)
+│   └── next-example/      # Next.js example application using the API
 ├── packages/
-│   └── typescript-sdk/  # TypeScript/JavaScript SDK (coming soon)
-└── turbo.json        # Turborepo configuration
+│   └── typescript-sdk/    # TypeScript/JavaScript client SDK
+├── docs/
+│   └── AUTH.md           # Authentication documentation
+├── examples/
+│   └── hmac-auth-example.js  # HMAC authentication examples
+├── turbo.json            # Turborepo configuration
+└── package.json          # Root workspace configuration
 ```
 
 ## Features
@@ -37,7 +44,7 @@ A monorepo containing a high-performance REST API for Cloudflare KV storage and 
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/) installed
+- [Bun](https://bun.sh/) 1.2.23+ installed
 - Cloudflare account with Workers access
 - KV namespace created
 
@@ -48,14 +55,20 @@ A monorepo containing a high-performance REST API for Cloudflare KV storage and 
 git clone <your-repo-url>
 cd cloudflare-kv-worker
 
-# Install dependencies
+# Install dependencies (all workspaces)
 bun install
 
-# Start development server
+# Set up local environment
+echo 'AUTH_SECRET_KEY=dev-secret-key-change-in-production' > apps/api/.dev.vars
+
+# Start all development servers
 bun run dev
 ```
 
-The API will be available at `http://localhost:8787/api/v1`
+This will start:
+- **API**: http://localhost:8787/api/v1
+- **Next.js Example**: http://localhost:3000 (if configured)
+- **Interactive API Docs**: http://localhost:8787/api/v1/docs
 
 For detailed development setup, see [CONTRIBUTING.md](CONTRIBUTING.md)
 
@@ -92,6 +105,48 @@ All API endpoints require authentication using either:
 
 For complete authentication documentation, setup instructions, and security best practices, see [docs/AUTH.md](docs/AUTH.md).
 
+## Examples & SDK Usage
+
+### Next.js Example Application
+
+The `apps/next-example` directory contains a fully functional Next.js application that demonstrates:
+- API integration with the Cloudflare KV Worker
+- TypeScript client usage
+- Real-time data updates and caching
+- Example components using the KV API
+
+Run the example:
+
+```bash
+cd apps/next-example
+bun run dev
+```
+
+### TypeScript SDK
+
+The `packages/typescript-sdk` provides a type-safe client library for consuming the API:
+
+```typescript
+import { KVClient } from '@cloudflare/kv-sdk';
+
+const client = new KVClient({
+  apiUrl: 'https://your-worker.workers.dev/api/v1',
+  authToken: 'your-auth-token',
+});
+
+// Set a value
+await client.put('key', 'value', { metadata: { custom: 'data' } });
+
+// Get a value
+const data = await client.get('key');
+
+// Batch operations
+await client.bulkPut([
+  { key: 'key1', value: 'value1' },
+  { key: 'key2', value: 'value2' },
+]);
+```
+
 ## Deployment
 
 ### 1. Set Secrets
@@ -104,10 +159,11 @@ wrangler secret put AUTH_SECRET_KEY
 
 ### 2. Update Configuration
 
-Edit `wrangler.jsonc` to update:
+Edit `apps/api/wrangler.jsonc` to update:
 - Worker name
 - KV namespace ID (if using a different namespace)
 - Routes and domains
+- Environment variables
 
 ### 3. Deploy
 
@@ -122,7 +178,7 @@ https://your-worker.your-subdomain.workers.dev
 
 ### 4. Update Production URLs
 
-After deployment, update the server URLs in `src/index.ts`:
+After deployment, update the server URLs in `apps/api/src/index.ts`:
 
 ```typescript
 servers: [
@@ -186,40 +242,56 @@ MIT
 
 ## Development
 
-This project uses [Turborepo](https://turbo.build) for managing the monorepo.
+This project uses [Turborepo](https://turbo.build) for managing the monorepo with workspaces at `apps/*` and `packages/*`.
 
-### Quick Start
+### Workspace Structure
+
+- **apps/api** - Cloudflare Workers API built with Hono
+- **apps/next-example** - Next.js application demonstrating API usage
+- **packages/typescript-sdk** - Reusable TypeScript client library
+
+### Available Commands
 
 ```bash
-# Install dependencies
+# Install all dependencies
 bun install
 
-# Development (all packages)
+# Development (run all apps/packages in dev mode)
 bun run dev
-
-# Development (specific app)
-cd apps/api && bun run dev
 
 # Build all packages
 bun run build
 
-# Deploy API
+# Deploy API to Cloudflare
 bun run deploy
+
+# Lint all packages
+bun run lint
+
+# Format all code
+bun run format
+
+# Run tests
+bun run test
+
+# Generate TypeScript types from Cloudflare config
+bun run cf-typegen
 ```
 
-### Working with the API
+### Working with Specific Workspaces
 
 ```bash
+# Develop API only
 cd apps/api
-
-# Start development server
 bun run dev
 
-# Deploy to Cloudflare Workers
-bun run deploy
+# Develop Next.js example
+cd apps/next-example
+bun run dev
 
-# Generate TypeScript types
-bun run cf-typegen
+# Work with SDK
+cd packages/typescript-sdk
+bun run build
 ```
 
 ## Contributing
