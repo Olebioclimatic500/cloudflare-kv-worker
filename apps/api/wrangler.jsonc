@@ -1,5 +1,5 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
+  "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "cloudflare-kv-worker-api",
   "main": "src/index.ts",
   "compatibility_date": "2025-10-12",
@@ -15,6 +15,9 @@
       "id": "b7a69f2afeed4d4d9d8517244cf3de07"
     }
   ],
+  "placement": {
+    "mode": "smart"
+  }
   // "r2_buckets": [
   //   {
   //     "binding": "MY_BUCKET",
