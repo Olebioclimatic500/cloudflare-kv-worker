@@ -1434,6 +1434,10 @@ A high-performance REST API for managing Cloudflare KV (Key-Value) storage at th
 
 Created by [kulterryan](https://github.com/kulterryan) | Follow on [X/Twitter](https://x.com/thehungrybird_)
 
+## Examples
+
+- **Next.js Demo Application** - Full-featured Next.js frontend demonstrating real-time KV operations with authentication, batch operations, and metadata management. Located in \`/apps/next-example\`. Run with \`bun run dev\` from root directory. Live demo: https://cloudflare-kv-worker-next.vercel.app/
+
 ## Features
 
 - **Edge Computing** - Runs on Cloudflare's global network for low latency
