@@ -1,7 +1,13 @@
 {
   "name": "@cloudflare-kv/next-example",
+  "description": "Cloudflare KV SDK Example",
   "version": "0.1.0",
   "private": true,
+  "author": {
+    "name": "Aryan Chaurasia",
+    "email": "chaurasia.aryan@yahoo.com",
+    "url": "https://aryn.dev"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
