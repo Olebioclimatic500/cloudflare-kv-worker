@@ -1,8 +1,12 @@
 'use server';
 
+import { customAlphabet } from 'nanoid';
 import { getKVClient } from '@/lib/kv';
 
-const COUNTER_KEY = 'app:counter';
+// Generate a unique counter key with nanoid for safety (lowercase letters and numbers only)
+const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 12);
+const COUNTER_SESSION_ID = nanoid();
+const COUNTER_KEY = `app:counter:${COUNTER_SESSION_ID}`;
 const ONE_HOUR_TTL = 3600; // 1 hour in seconds
 
 export async function getCounter() {

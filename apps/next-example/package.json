@@ -17,7 +17,8 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "next": "15.5.4",
-    "@cloudflare-kv/typescript-sdk": "workspace:*"
+    "@cloudflare-kv/typescript-sdk": "workspace:*",
+    "nanoid": "^4.0.2"
   },
   "devDependencies": {
     "typescript": "^5",
