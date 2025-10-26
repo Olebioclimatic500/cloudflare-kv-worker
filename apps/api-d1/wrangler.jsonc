@@ -1,0 +1,35 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "cloudflare-kv-worker-d1-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-10-12",
+  // "compatibility_flags": [
+  //   "nodejs_compat"
+  // ],
+  // "vars": {
+  //   "MY_VAR": "my-variable"
+  // },
+  "placement": {
+    "mode": "smart"
+  },
+  // "r2_buckets": [
+  //   {
+  //     "binding": "MY_BUCKET",
+  //     "bucket_name": "my-bucket"
+  //   }
+  // ],
+  "d1_databases": [
+    {
+      "binding": "MY_DB",
+      "database_name": "my-database",
+      "database_id": "b7a69f2afeed4d4d9d8517244cf3de07"
+    }
+  ],
+  // "ai": {
+  //   "binding": "AI"
+  // },
+  // "observability": {
+  //   "enabled": true,
+  //   "head_sampling_rate": 1
+  // }
+}
