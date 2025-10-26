@@ -209,7 +209,7 @@ let kvNamespace: D1KVNamespace;
 // Initialize D1 KV namespace on first request
 app.use('*', async (c, next) => {
   if (!kvNamespace) {
-    kvNamespace = new D1KVNamespace(c.env.MY_DB);
+    kvNamespace = new D1KVNamespace(c.env.WORKER_API_D1);
   }
   await next();
 });

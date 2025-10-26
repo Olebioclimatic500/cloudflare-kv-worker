@@ -28,11 +28,11 @@ fi
 
 # Run the migration
 echo "Applying migration: 001_create_kv_table.sql"
-bunx wrangler d1 execute MY_DB $REMOTE_FLAG --file=./migrations/001_create_kv_table.sql
+bunx wrangler d1 execute WORKER_API_D1 $REMOTE_FLAG --file=./migrations/001_create_kv_table.sql
 
 echo "Migration completed!"
 
 # Optional: Show table info
 echo ""
 echo "Database schema:"
-bunx wrangler d1 execute MY_DB $REMOTE_FLAG --command="SELECT sql FROM sqlite_master WHERE type='table' AND name='kv_store';"
+bunx wrangler d1 execute WORKER_API_D1 $REMOTE_FLAG --command="SELECT sql FROM sqlite_master WHERE type='table' AND name='kv_store';"

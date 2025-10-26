@@ -20,9 +20,9 @@
   // ],
   "d1_databases": [
     {
-      "binding": "MY_DB",
-      "database_name": "my-database",
-      "database_id": "b7a69f2afeed4d4d9d8517244cf3de07"
+      "binding": "WORKER_API_D1",
+      "database_name": "worker-api-d1",
+      "database_id": "089a5c95-3af4-48b8-a3a7-e7fbfc6ff300"
     }
   ],
   "rules": [
