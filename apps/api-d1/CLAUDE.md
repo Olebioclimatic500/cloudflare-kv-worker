@@ -4,19 +4,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Cloudflare Workers KV API service built with Hono framework. It provides a RESTful API interface for interacting with Cloudflare KV (Key-Value) storage, including operations for reading, writing, listing, and deleting key-value pairs with support for metadata and bulk operations.
+This is a Cloudflare Workers D1 API service built with Hono framework. It provides a RESTful API interface that mimics Cloudflare KV (Key-Value) storage functionality using D1 (SQLite) database, including operations for reading, writing, listing, and deleting key-value pairs with support for metadata and bulk operations.
 
 ## Common Development Commands
 
 ```bash
-# Install dependencies
+# Install dependencies (automatically runs local DB migration)
 bun install
 
 # Start development server with hot reload
 bun run dev
 
-# Deploy to Cloudflare Workers (with minification)
+# Deploy to Cloudflare Workers (automatically checks remote DB schema)
 bun run deploy
+
+# Force deploy without migration check
+bun run deploy:force
+
+# Run local database migration manually
+bun run migrate
+
+# Run remote database migration manually
+bun run migrate:remote
 
 # Generate TypeScript types from Worker configuration
 bun run cf-typegen
@@ -35,11 +44,16 @@ bun run cf-typegen
 
 1. **Single Entry Point**: All functionality is in `src/index.ts` which exports a Hono application configured with CloudflareBindings for type safety.
 
-2. **KV Namespace Binding**: The worker is bound to a KV namespace `CF_WORKER_API_KV` (ID: b7a69f2afeed4d4d9d8517244cf3de07) configured in `wrangler.jsonc`.
+2. **D1 Database Binding**: The worker is bound to a D1 database `MY_DB` (ID: b7a69f2afeed4d4d9d8517244cf3de07) configured in `wrangler.jsonc`.
 
-3. **Base Path**: All API endpoints are prefixed with `/api/v1`.
+3. **Automated Migrations**: Database migrations run automatically:
+   - `postinstall`: Checks and applies local DB schema after `bun install`
+   - `predeploy`: Verifies remote DB schema before deployment
+   - Manual migration: `bun run migrate` (local) or `bun run migrate:remote` (remote)
 
-4. **Environment Variables**: Development secrets are stored in `.dev.vars` (e.g., AUTH_SECRET_KEY for potential authentication).
+4. **Base Path**: All API endpoints are prefixed with `/api/v1`.
+
+5. **Environment Variables**: Development secrets are stored in `.dev.vars` (e.g., AUTH_SECRET_KEY for potential authentication).
 
 ## API Endpoint Structure
 
@@ -84,18 +98,21 @@ The API provides comprehensive CRUD operations for Cloudflare KV:
 
 ## Development Considerations
 
-### When modifying the KV API:
+### When modifying the D1 API:
 1. Maintain consistent error handling patterns across all endpoints
-2. Respect Cloudflare KV limits (1 write/second per key, key size limits)
-3. Always validate input parameters before KV operations
+2. D1 doesn't have the same rate limits as KV, but implement application-level rate limiting if needed
+3. Always validate input parameters before D1 operations
 4. Use appropriate TypeScript types from CloudflareBindings
+5. Remember to run migrations before deploying: `./scripts/migrate-d1.sh`
 
 ### Testing locally:
-- Use `wrangler dev` to test with local KV namespace simulation
+- Use `wrangler dev` to test with local D1 database
 - The `.dev.vars` file contains development environment variables
-- Test rate limiting behavior with bulk operations
+- Run migrations first: `./scripts/migrate-d1.sh`
+- D1 provides strong consistency vs KV's eventual consistency
 
 ### Deployment:
 - Code is automatically minified during deployment
-- Ensure `wrangler.jsonc` has correct KV namespace binding
+- Ensure `wrangler.jsonc` has correct D1 database binding
+- Run migrations before deploying to production
 - Update compatibility_date when using new Workers features

@@ -3,12 +3,16 @@
   "type": "module",
   "version": "1.0.0",
   "private": true,
-  "description": "Cloudflare KV Worker API",
+  "description": "Cloudflare D1 Worker API (KV-compatible)",
   "scripts": {
     "dev": "wrangler dev",
     "build": "wrangler deploy --dry-run --outdir=dist",
-    "deploy": "wrangler deploy --minify",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+    "deploy": "bun run predeploy && wrangler deploy --minify",
+    "deploy:force": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "migrate": "./scripts/migrate-d1.sh",
+    "migrate:remote": "./scripts/migrate-d1.sh --remote",
+    "migrate:create": "wrangler d1 migrations create MY_DB"
   },
   "dependencies": {
     "@hono/standard-validator": "^0.1.5",

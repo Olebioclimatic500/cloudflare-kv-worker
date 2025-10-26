@@ -25,6 +25,13 @@
       "database_id": "b7a69f2afeed4d4d9d8517244cf3de07"
     }
   ],
+  "rules": [
+    {
+      "type": "ESModule",
+      "globs": ["**/*.ts", "**/*.js"],
+      "fallthrough": true
+    }
+  ],
   // "ai": {
   //   "binding": "AI"
   // },

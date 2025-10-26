@@ -1,9 +1,28 @@
+/**
+ * Cloudflare D1 Worker API (KV-Compatible)
+ * 
+ * This Worker provides a REST API that mimics Cloudflare KV using D1 (SQLite) as storage.
+ * All code in this file runs in Cloudflare Workers runtime - 100% Workers compatible.
+ * 
+ * ✅ Uses only Workers-compatible APIs:
+ *    - D1 Database (native to Workers)
+ *    - Web Crypto API (crypto.subtle)
+ *    - Web Standards (TextEncoder, atob, btoa, fetch, Request, Response)
+ *    - Hono framework (Workers-compatible)
+ * 
+ * ❌ Does NOT use:
+ *    - Node.js APIs (fs, path, child_process, etc.)
+ *    - File system access
+ *    - process.env (uses c.env instead)
+ */
+
 import { Hono } from 'hono';
 import * as v from 'valibot';
 import { describeRoute, openAPIRouteHandler, resolver } from 'hono-openapi';
 import { vValidator } from '@hono/valibot-validator';
 import { Scalar } from '@scalar/hono-api-reference';
 import type { Context, Next } from 'hono';
+import { D1KVNamespace, D1KVGetWithMetadataResult, D1KVListOptions } from './d1-helpers';
 
 // HMAC Authentication Middleware
 async function hmacAuth(c: Context<{ Bindings: CloudflareBindings }>, next: Next) {
@@ -202,6 +221,17 @@ const bulkResponseSchema = v.object({
 
 const app = new Hono<{ Bindings: CloudflareBindings }>().basePath('/api/v1');
 
+// Initialize D1 KV namespace
+let kvNamespace: D1KVNamespace;
+
+// Initialize D1 KV namespace on first request
+app.use('*', async (c, next) => {
+  if (!kvNamespace) {
+    kvNamespace = new D1KVNamespace(c.env.MY_DB);
+  }
+  await next();
+});
+
 // Apply HMAC authentication middleware to all routes
 app.use('*', hmacAuth);
 
@@ -327,7 +357,7 @@ app.get(
 
       const options = cacheTtl ? { cacheTtl } : undefined;
 
-      const value = await c.env.CF_WORKER_API_KV.get(key, options);
+      const value = await kvNamespace.get(key, options) as string | null;
 
       if (value === null) {
         return c.json({ error: 'Key not found' }, 404);
@@ -422,7 +452,7 @@ app.post(
       const { keys, type = 'text', cacheTtl } = c.req.valid('json');
 
       const options = cacheTtl ? { cacheTtl } : undefined;
-      const values = await c.env.CF_WORKER_API_KV.get(keys, options);
+      const values = await kvNamespace.get(keys, options) as Map<string, string | null>;
 
       const result: Record<string, string | object | null> = {};
       for (const [key, value] of values.entries()) {
@@ -532,7 +562,7 @@ app.get(
 
       const options = cacheTtl ? { cacheTtl } : undefined;
 
-      const result = await c.env.CF_WORKER_API_KV.getWithMetadata(key, options);
+      const result = await kvNamespace.getWithMetadata(key, options) as D1KVGetWithMetadataResult;
 
       if (result.value === null) {
         return c.json({ error: 'Key not found' }, 404);
@@ -636,7 +666,7 @@ app.post(
       const { keys, type = 'text', cacheTtl } = c.req.valid('json');
 
       const options = cacheTtl ? { cacheTtl } : undefined;
-      const results = await c.env.CF_WORKER_API_KV.getWithMetadata(keys, options);
+      const results = await kvNamespace.getWithMetadata(keys, options) as Map<string, D1KVGetWithMetadataResult>;
 
       const valuesWithMetadata: Record<string, { value: string | object | null; metadata: unknown }> = {};
       for (const [key, result] of results.entries()) {
@@ -726,12 +756,12 @@ app.get(
     try {
       const { prefix, limit, cursor } = c.req.valid('query');
 
-      const options: KVNamespaceListOptions = {};
+      const options: D1KVListOptions = {};
       if (prefix) options.prefix = prefix;
       if (limit) options.limit = limit;
       if (cursor) options.cursor = cursor;
 
-      const list = await c.env.CF_WORKER_API_KV.list(options);
+      const list = await kvNamespace.list(options);
 
       return c.json({
         keys: list.keys,
@@ -860,7 +890,7 @@ app.post(
       // Convert value to string if it's an object
       const valueToStore = typeof value === 'object' ? JSON.stringify(value) : String(value);
 
-      await c.env.CF_WORKER_API_KV.put(key, valueToStore, options);
+      await kvNamespace.put(key, valueToStore, options);
 
       return c.json(
         {
@@ -1027,7 +1057,7 @@ app.put(
       }
 
       // Check if key exists
-      const existingValue = await c.env.CF_WORKER_API_KV.get(key);
+      const existingValue = await kvNamespace.get(key);
       const isNewKey = existingValue === null;
 
       // Build options object
@@ -1039,7 +1069,7 @@ app.put(
       // Convert value to string if it's an object
       const valueToStore = typeof value === 'object' ? JSON.stringify(value) : String(value);
 
-      await c.env.CF_WORKER_API_KV.put(key, valueToStore, options);
+      await kvNamespace.put(key, valueToStore, options);
 
       // Return 201 for new resources, 200 for updates
       return c.json(
@@ -1205,7 +1235,7 @@ app.post(
 
         while (attempt < maxRetries) {
           try {
-            await c.env.CF_WORKER_API_KV.put(key, valueToStore, options);
+            await kvNamespace.put(key, valueToStore, options);
             return { key, success: true };
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -1297,7 +1327,7 @@ app.delete(
     try {
       const { key } = c.req.valid('param');
 
-      await c.env.CF_WORKER_API_KV.delete(key);
+      await kvNamespace.delete(key);
 
       return c.json({
         success: true,
@@ -1389,7 +1419,7 @@ app.post(
 
       const deletePromises = keys.map(async (key) => {
         try {
-          await c.env.CF_WORKER_API_KV.delete(key);
+          await kvNamespace.delete(key);
           return { key, success: true };
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
