@@ -1,21 +1,3 @@
-/**
- * Cloudflare D1 Worker API (KV-Compatible)
- * 
- * This Worker provides a REST API that mimics Cloudflare KV using D1 (SQLite) as storage.
- * All code in this file runs in Cloudflare Workers runtime - 100% Workers compatible.
- * 
- * ✅ Uses only Workers-compatible APIs:
- *    - D1 Database (native to Workers)
- *    - Web Crypto API (crypto.subtle)
- *    - Web Standards (TextEncoder, atob, btoa, fetch, Request, Response)
- *    - Hono framework (Workers-compatible)
- * 
- * ❌ Does NOT use:
- *    - Node.js APIs (fs, path, child_process, etc.)
- *    - File system access
- *    - process.env (uses c.env instead)
- */
-
 import { Hono } from 'hono';
 import * as v from 'valibot';
 import { describeRoute, openAPIRouteHandler, resolver } from 'hono-openapi';
@@ -236,7 +218,7 @@ app.use('*', async (c, next) => {
 app.use('*', hmacAuth);
 
 app.get('/', (c) => {
-  return c.json({ message: 'Cloudflare KV Worker API', version: '1.0.0', docs: '/api/v1/docs' });
+  return c.json({ message: 'Cloudflare D1 Worker API (KV-Compatible)', version: '1.0.0', storage: 'D1 (SQLite)', docs: '/api/v1/docs' });
 });
 
 // Health check endpoint
@@ -1453,37 +1435,56 @@ app.get(
   openAPIRouteHandler(app, {
     documentation: {
       info: {
-        title: 'Cloudflare KV Worker API',
+        title: 'Cloudflare D1 Worker API (KV-Compatible)',
         version: '1.0.0',
         description: `
 
 # Getting Started
-A high-performance REST API for managing Cloudflare KV (Key-Value) storage at the edge.
+A high-performance REST API providing a KV-compatible interface using **Cloudflare D1 (SQLite)** as the storage backend.
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://dub.sh/L1aS7JO)
 
 Created by [kulterryan](https://github.com/kulterryan) | Follow on [X/Twitter](https://x.com/thehungrybird_)
 
+## Storage Backend: D1 (SQLite)
+
+This API uses **Cloudflare D1** instead of KV, providing:
+- **Strong Consistency** - Immediate read-after-write (vs KV's eventual consistency)
+- **No Rate Limits** - Unlike KV (1 write/second per key), D1 has no such restrictions
+- **Transaction Support** - Atomic batch operations
+- **SQL Capabilities** - Full SQLite power for future enhancements
+- **100% KV-Compatible API** - Drop-in replacement for KV-based applications
+
 ## Examples
 
-- **Next.js Demo Application** - Full-featured Next.js frontend demonstrating real-time KV operations with authentication, batch operations, and metadata management. Located in \`/apps/next-example\`. Run with \`bun run dev\` from root directory. Live demo: https://cloudflare-kv-worker-next.vercel.app/
+- **Next.js Demo Application** - Full-featured Next.js frontend demonstrating real-time operations with authentication, batch operations, and metadata management. Located in \`/apps/next-example\`. Run with \`bun run dev\` from root directory. Live demo: https://cloudflare-kv-worker-next.vercel.app/
 
 ## Features
 
 - **Edge Computing** - Runs on Cloudflare's global network for low latency
+- **D1 Backend** - SQLite database with strong consistency and no rate limits
 - **Batch Operations** - Get up to 100 keys in a single request
 - **Bulk Operations** - Write up to 10,000 key-value pairs at once
 - **Metadata Support** - Attach custom metadata to any key-value pair
 - **TTL Support** - Set expiration times for automatic cleanup
 - **Pagination** - List keys with prefix filtering and cursor-based pagination
-- **Automatic Retries** - Built-in retry logic for rate-limited operations
+- **Transaction Support** - Atomic batch operations via D1 transactions
 
-## Rate Limits
+## D1 vs KV Comparison
 
-- Maximum 1 write per second per key
-- Batch GET: Up to 100 keys per request
-- Bulk WRITE: Up to 10,000 pairs per request
-- Bulk DELETE: No limit
+| Feature | Cloudflare KV | D1 (This API) |
+|---------|---------------|---------------|
+| Consistency | Eventually consistent | Strongly consistent |
+| Rate Limits | 1 write/second per key | No rate limits |
+| Batch Operations | Limited | Full transaction support |
+| Storage Type | Distributed KV store | SQLite database |
+
+## Performance Considerations
+
+- D1 may have slightly higher latency for simple lookups vs globally-replicated KV
+- D1 excels at batch operations and write-heavy workloads (no rate limits)
+- Strong consistency means immediate data availability (vs KV's propagation delay)
+- No 1-second write delay between updates to the same key
 
 ## Key Constraints
 
@@ -1491,7 +1492,7 @@ Created by [kulterryan](https://github.com/kulterryan) | Follow on [X/Twitter](h
 - Keys cannot be "." or ".."
 - Values are stored as strings (JSON objects are automatically stringified)
 
-GitHub Link: [Cloudflare KV Worker](https://github.com/kulterryan/cloudflare-kv-worker)
+GitHub Link: [Cloudflare D1 Worker API](https://github.com/kulterryan/cloudflare-kv-worker)
         `,
         contact: {
           name: 'API Support',
@@ -1503,9 +1504,10 @@ GitHub Link: [Cloudflare KV Worker](https://github.com/kulterryan/cloudflare-kv-
         },
       },
       tags: [
-        { name: 'Read Operations', description: 'Retrieve key-value pairs, including single, batch, and list operations' },
-        { name: 'Write Operations', description: 'Create and update key-value pairs with support for metadata and TTL' },
-        { name: 'Delete Operations', description: 'Remove key-value pairs individually or in bulk' },
+        { name: 'Health', description: 'Health check and API status endpoints' },
+        { name: 'Read Operations', description: 'Retrieve key-value pairs from D1, including single, batch, and list operations' },
+        { name: 'Write Operations', description: 'Create and update key-value pairs in D1 with support for metadata and TTL' },
+        { name: 'Delete Operations', description: 'Remove key-value pairs from D1 individually or in bulk' },
       ],
       components: {
         securitySchemes: {
@@ -1562,7 +1564,7 @@ app.get(
   '/docs',
   Scalar({
     url: '/api/v1/openapi',
-    pageTitle: 'Cloudflare KV Worker API - Documentation',
+    pageTitle: 'Cloudflare D1 Worker API (KV-Compatible) - Documentation',
     layout: 'modern',
     hideClientButton: true,
     expandAllResponses: true,
